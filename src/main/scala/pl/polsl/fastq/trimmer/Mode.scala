@@ -1,5 +1,5 @@
 package pl.polsl.fastq.trimmer
 
-abstract class Mode(args: Array[String]) {
-  def trim(): Unit
+trait Mode {
+  def run(argsMap: Map[String, Any]): Unit
 }

@@ -1,7 +1,7 @@
 package pl.polsl.fastq.trimmer
 
-class SingleEndMode(args: Array[String]) extends Mode(args) {
-  override def trim(): Unit = {
-    args.foreach(println)
+class SingleEndMode extends Mode {
+  override def run(argsMap: Map[String, Any]): Unit = {
+    argsMap.foreach(println)
   }
 }
