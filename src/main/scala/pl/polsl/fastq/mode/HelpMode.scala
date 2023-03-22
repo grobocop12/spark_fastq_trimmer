@@ -1,4 +1,4 @@
-package pl.polsl.fastq.trimmer
+package pl.polsl.fastq.mode
 
 import pl.polsl.fastq.utils.UsagePrinter
 

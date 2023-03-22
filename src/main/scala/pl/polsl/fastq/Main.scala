@@ -1,6 +1,6 @@
 package pl.polsl.fastq
 
-import pl.polsl.fastq.trimmer.{HelpMode, PairedEndMode, SingleEndMode}
+import pl.polsl.fastq.mode.{HelpMode, PairedEndMode, SingleEndMode}
 import pl.polsl.fastq.utils.{ArgsParser, UsagePrinter}
 
 object Main extends App {
