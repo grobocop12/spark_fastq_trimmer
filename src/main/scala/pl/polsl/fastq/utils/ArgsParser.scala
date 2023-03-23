@@ -35,7 +35,7 @@ object ArgsParser {
         builder += ("input_2" -> args.head)
         parseOne(args.tail.head, args.tail.tail, builder)
       case "-o" | "--out" =>
-        builder += ("out" -> args.head)
+        builder += ("output" -> args.head)
         parseOne(args.tail.head, args.tail.tail, builder)
       case "-h" | "--help" =>
         builder += ("mode" -> "help")
