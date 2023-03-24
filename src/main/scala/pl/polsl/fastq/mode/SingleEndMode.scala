@@ -1,11 +1,14 @@
 package pl.polsl.fastq.mode
 
-import org.apache.spark.SparkContext
 import org.apache.spark.mllib.rdd.RDDFunctions.fromRDD
 import org.apache.spark.rdd.RDD
 import org.apache.spark.sql.SparkSession
 import pl.polsl.fastq.data.FastqRecord
+import pl.polsl.fastq.trimmer.Trimmer
 import pl.polsl.fastq.trimmer.TrimmerFactory.createTrimmers
+import pl.polsl.fastq.utils.PhredDetector
+
+import scala.annotation.tailrec
 
 class SingleEndMode extends Mode {
   override def run(argsMap: Map[String, Any]): Unit = {
@@ -22,14 +25,22 @@ class SingleEndMode extends Mode {
       .map(x => FastqRecord(x(0), x(1), x(2), x(3)))
       .cache
 
-
+    val phredOffset = argsMap.getOrElse("phredOffset", PhredDetector(records.first))
+    println(phredOffset)
 
     val first = records.first()
 
-    records.saveAsTextFile(argsMap("output").asInstanceOf[String])
+    val trimmedRecords = applyTrimmer(records, trimmers)
+
+    trimmedRecords.saveAsTextFile(argsMap("output").asInstanceOf[String])
 
     session.close
   }
 
-  private def applyTrimmer(): RDD[FastqRecord] = ???
+  @tailrec
+  private def applyTrimmer(records: RDD[FastqRecord], trimmers: List[Trimmer]): RDD[FastqRecord] =
+    if (trimmers.isEmpty)
+      records
+    else
+      applyTrimmer(trimmers.head(records), trimmers.tail)
 }
