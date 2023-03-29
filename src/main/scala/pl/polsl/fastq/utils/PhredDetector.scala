@@ -13,6 +13,6 @@ object PhredDetector {
       64
     else if (phred33Total > 0 && phred64Total == 0)
       33
-    else 0
+    else throw new RuntimeException("Unable to detect quality encoding")
   }
 }
