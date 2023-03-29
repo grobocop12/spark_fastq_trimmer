@@ -11,6 +11,8 @@ import pl.polsl.fastq.utils.PhredDetector
 import scala.annotation.tailrec
 
 class SingleEndMode extends Mode {
+  private val PHRED_SAMPLE_SIZE = 100
+
   override def run(argsMap: Map[String, Any]): Unit = {
     val trimmers = createTrimmers(argsMap("trimmers").asInstanceOf[List[String]])
     val session = SparkSession
@@ -25,10 +27,7 @@ class SingleEndMode extends Mode {
       .map(x => FastqRecord(x(0), x(1), x(2), x(3)))
       .cache
 
-    val phredOffset = argsMap.getOrElse("phredOffset", PhredDetector(records.first))
-    println(phredOffset)
-
-    val first = records.first()
+    val phredOffset = argsMap.getOrElse("phredOffset", PhredDetector(records.takeSample(false, PHRED_SAMPLE_SIZE)))
 
     val trimmedRecords = applyTrimmer(records, trimmers)
 
