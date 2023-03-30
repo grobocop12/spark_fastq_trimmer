@@ -14,7 +14,6 @@ class SingleEndMode extends Mode {
   private val PHRED_SAMPLE_SIZE = 100
 
   override def run(argsMap: Map[String, Any]): Unit = {
-    val trimmers = createTrimmers(argsMap("trimmers").asInstanceOf[List[String]])
     val session = SparkSession
       .builder
       .appName(argsMap.getOrElse("appName", "FastTrimmerSE").asInstanceOf[String])
@@ -27,7 +26,10 @@ class SingleEndMode extends Mode {
       .map(x => FastqRecord(x(0), x(1), x(2), x(3)))
       .cache
 
-    val phredOffset = argsMap.getOrElse("phredOffset", PhredDetector(records.takeSample(false, PHRED_SAMPLE_SIZE)))
+    val phredOffset: Int = argsMap.getOrElse("phredOffset", PhredDetector(records.takeSample(withReplacement = false,
+      PHRED_SAMPLE_SIZE)))
+      .asInstanceOf[Int]
+    val trimmers = createTrimmers(argsMap("trimmers").asInstanceOf[List[String]], phredOffset)
 
     val trimmedRecords = applyTrimmer(records, trimmers)
 
