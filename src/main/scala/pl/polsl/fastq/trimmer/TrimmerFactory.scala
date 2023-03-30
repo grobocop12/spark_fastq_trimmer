@@ -12,6 +12,7 @@ object TrimmerFactory {
       case "LEADING" => new LeadingTrimmer(args.toInt, phredOffset)
       case "MINLEN" => new MinLenTrimmer(args.toInt)
       case "MAXLEN" => new MaxLenTrimmer(args.toInt)
+      case "TRAILING" => new TrailingTrimmer(args.toInt, phredOffset)
       case _ => throw new RuntimeException(s"Unknown trimmer: $name")
     }
   }

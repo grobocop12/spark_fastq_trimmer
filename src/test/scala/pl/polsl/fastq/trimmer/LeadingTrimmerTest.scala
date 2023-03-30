@@ -19,21 +19,27 @@ class LeadingTrimmerTest extends AnyFlatSpec {
   it should "trim first two leading quals" in {
     val trimmer = new LeadingTrimmer(6, 33)
     val rdd: RDD[FastqRecord] = sc.parallelize(List(FastqRecord("READ", "ATCG", "+", "!!((")))
+
     val result = trimmer(rdd)
+
     assert(result.first() === FastqRecord("READ", "CG", "+", "(("))
   }
 
   it should "not trim any quals" in {
     val trimmer = new LeadingTrimmer(0, 33)
     val rdd: RDD[FastqRecord] = sc.parallelize(List(FastqRecord("READ", "ATCG", "+", "!!((")))
+
     val result = trimmer(rdd)
+
     assert(result.first() === FastqRecord("READ", "ATCG", "+", "!!(("))
   }
 
   it should "trim entire record" in {
     val trimmer = new LeadingTrimmer(8, 33)
     val rdd: RDD[FastqRecord] = sc.parallelize(List(FastqRecord("READ", "ATCG", "+", "!!((")))
+
     val result = trimmer(rdd)
+
     assert(result.isEmpty())
   }
 }

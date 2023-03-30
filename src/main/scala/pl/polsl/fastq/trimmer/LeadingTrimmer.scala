@@ -5,12 +5,15 @@ import pl.polsl.fastq.data.FastqRecord
 
 class LeadingTrimmer(val qual: Int, val phredOffset: Int) extends Trimmer {
   override def apply(in: RDD[FastqRecord]): RDD[FastqRecord] = in.map(this.trimLeading)
-      .filter(_ != null)
+    .filter(_ != null)
 
   private def trimLeading(rec: FastqRecord): FastqRecord = {
     val idx = rec.qualityAsInteger.map(_ - phredOffset).indexWhere(_ >= qual)
-    if (idx >= 0)
+    if (idx > 0)
       FastqRecord(rec.name, rec.sequence.substring(idx), rec.comment, rec.quality.substring(idx))
-    else null
+    else if (idx == 0)
+      rec
+    else
+      null
   }
 }
