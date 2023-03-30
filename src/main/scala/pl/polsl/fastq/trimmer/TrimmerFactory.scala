@@ -9,6 +9,7 @@ object TrimmerFactory {
     val name = str.substring(0, idx)
     val args = if (idx > 0) str.substring(idx + 1, str.length) else ""
     name match {
+      case "CROP" => new CropTrimmer(args.toInt)
       case "LEADING" => new LeadingTrimmer(args.toInt, phredOffset)
       case "MINLEN" => new MinLenTrimmer(args.toInt)
       case "MAXLEN" => new MaxLenTrimmer(args.toInt)
