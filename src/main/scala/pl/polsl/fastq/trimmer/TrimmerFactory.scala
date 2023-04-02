@@ -6,7 +6,7 @@ object TrimmerFactory {
 
   private def createTrimmer(str: String, phredOffset: Int): Trimmer = {
     val idx = str.indexOf(":")
-    val name = str.substring(0, idx)
+    val name = if (idx > 0) str.substring(0, idx) else str
     val args = if (idx > 0) str.substring(idx + 1, str.length) else ""
     name match {
       case "CROP" => new CropTrimmer(args.toInt)
