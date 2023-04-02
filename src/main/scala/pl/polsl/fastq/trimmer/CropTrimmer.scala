@@ -3,7 +3,7 @@ package pl.polsl.fastq.trimmer
 import org.apache.spark.rdd.RDD
 import pl.polsl.fastq.data.FastqRecord
 
-class CropTrimmer(val length: Int) extends Trimmer {
+class CropTrimmer(length: Int) extends Trimmer {
   override def apply(in: RDD[FastqRecord]): RDD[FastqRecord] = in.map(crop)
 
   private def crop(rec: FastqRecord): FastqRecord = {

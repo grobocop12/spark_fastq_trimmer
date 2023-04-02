@@ -3,7 +3,7 @@ package pl.polsl.fastq.trimmer
 import org.apache.spark.rdd.RDD
 import pl.polsl.fastq.data.FastqRecord
 
-class TrailingTrimmer(val qual: Int, val phredOffset: Int) extends Trimmer {
+class TrailingTrimmer(qual: Int, phredOffset: Int) extends Trimmer {
   override def apply(in: RDD[FastqRecord]): RDD[FastqRecord] =
     in.map(this.trimTrailing).filter(_ != null)
 
