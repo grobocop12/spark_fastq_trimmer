@@ -24,14 +24,14 @@ class SingleEndMode extends Mode {
     val records = sc.textFile(argsMap("input").asInstanceOf[String])
       .sliding(4, 4)
       .map(x => FastqRecord(x(0), x(1), x(2), x(3)))
-      .cache
 
     val phredOffset: Int = argsMap.getOrElse("phredOffset", PhredDetector(records.takeSample(withReplacement = false,
       PHRED_SAMPLE_SIZE)))
       .asInstanceOf[Int]
+    val recordsWithOffset = records.map(f => FastqRecord(f.name, f.sequence, f.comment, f.quality, phredOffset))
     val trimmers = createTrimmers(argsMap("trimmers").asInstanceOf[List[String]], phredOffset)
 
-    val trimmedRecords = applyTrimmer(records, trimmers)
+    val trimmedRecords = applyTrimmer(recordsWithOffset, trimmers)
 
     trimmedRecords.saveAsTextFile(argsMap("output").asInstanceOf[String])
 

@@ -10,6 +10,6 @@ class CropTrimmer(length: Int) extends Trimmer {
     if (rec.sequence.length <= length)
       rec
     else
-      FastqRecord(rec.name, rec.sequence.substring(0, length), rec.comment, rec.quality.substring(0, length))
+      FastqRecord(rec.name, rec.sequence.substring(0, length), rec.comment, rec.quality.substring(0, length), rec.phredOffset)
   }
 }

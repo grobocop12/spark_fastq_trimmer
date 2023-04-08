@@ -16,20 +16,20 @@ class ToPhred33TrimmerTest extends AnyFlatSpec {
   private val sc = session.sparkContext
 
   it should "convert quals to phred33" in {
-    val trimmer = new ToPhred33Trimmer(64)
-    val rdd: RDD[FastqRecord] = sc.parallelize(List(FastqRecord("READ", "ATCGA", "+", "@KVaj")))
+    val trimmer = new ToPhred33Trimmer()
+    val rdd: RDD[FastqRecord] = sc.parallelize(List(FastqRecord("READ", "ATCGA", "+", "@KVaj", 64)))
 
     val result = trimmer(rdd)
 
-    assert(result.first() === FastqRecord("READ", "ATCGA", "+", "!,7BK"))
+    assert(result.first() === FastqRecord("READ", "ATCGA", "+", "!,7BK", 33))
   }
 
   it should "ignore convertion" in {
-    val trimmer = new ToPhred33Trimmer(33)
-    val rdd: RDD[FastqRecord] = sc.parallelize(List(FastqRecord("READ", "ATCGA", "+", "!,7BK")))
+    val trimmer = new ToPhred33Trimmer()
+    val rdd: RDD[FastqRecord] = sc.parallelize(List(FastqRecord("READ", "ATCGA", "+", "!,7BK", 33)))
 
     val result = trimmer(rdd)
 
-    assert(result.first() === FastqRecord("READ", "ATCGA", "+", "!,7BK"))
+    assert(result.first() === FastqRecord("READ", "ATCGA", "+", "!,7BK", 33))
   }
 }

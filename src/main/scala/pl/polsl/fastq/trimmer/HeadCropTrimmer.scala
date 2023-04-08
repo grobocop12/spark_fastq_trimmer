@@ -9,6 +9,6 @@ class HeadCropTrimmer(bases: Int) extends Trimmer {
   private def headCrop(rec: FastqRecord): FastqRecord = {
     if (bases >= rec.sequence.length)
       null
-    else FastqRecord(rec.name, rec.sequence.substring(bases), rec.comment, rec.quality.substring(bases))
+    else FastqRecord(rec.name, rec.sequence.substring(bases), rec.comment, rec.quality.substring(bases), rec.phredOffset)
   }
 }

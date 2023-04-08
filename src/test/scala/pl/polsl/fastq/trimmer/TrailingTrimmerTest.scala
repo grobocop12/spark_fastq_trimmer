@@ -16,8 +16,8 @@ class TrailingTrimmerTest extends AnyFlatSpec {
   private val sc = session.sparkContext
 
   it should "trim last two leading quals" in {
-    val trimmer = new TrailingTrimmer(6, 33)
-    val rdd: RDD[FastqRecord] = sc.parallelize(List(FastqRecord("READ", "ATCG", "+", "((!!")))
+    val trimmer = new TrailingTrimmer(6)
+    val rdd: RDD[FastqRecord] = sc.parallelize(List(FastqRecord("READ", "ATCG", "+", "((!!", 33)))
 
     val result = trimmer(rdd)
 
@@ -25,17 +25,17 @@ class TrailingTrimmerTest extends AnyFlatSpec {
   }
 
   it should "not trim any quals" in {
-    val trimmer = new TrailingTrimmer(0, 33)
-    val rdd: RDD[FastqRecord] = sc.parallelize(List(FastqRecord("READ", "ATCG", "+", "((!!")))
+    val trimmer = new TrailingTrimmer(0)
+    val rdd: RDD[FastqRecord] = sc.parallelize(List(FastqRecord("READ", "ATCG", "+", "((!!", 33)))
 
     val result = trimmer(rdd)
 
-    assert(result.first() === FastqRecord("READ", "ATCG", "+", "((!!"))
+    assert(result.first() === FastqRecord("READ", "ATCG", "+", "((!!", 33))
   }
 
   it should "trim entire record" in {
-    val trimmer = new TrailingTrimmer(8, 33)
-    val rdd: RDD[FastqRecord] = sc.parallelize(List(FastqRecord("READ", "ATCG", "+", "((!!")))
+    val trimmer = new TrailingTrimmer(8)
+    val rdd: RDD[FastqRecord] = sc.parallelize(List(FastqRecord("READ", "ATCG", "+", "((!!", 33)))
 
     val result = trimmer(rdd)
 

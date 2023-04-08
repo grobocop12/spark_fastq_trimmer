@@ -16,20 +16,20 @@ class ToPhred64TrimmerTest extends AnyFlatSpec {
   private val sc = session.sparkContext
 
   it should "convert quals to phred64" in {
-    val trimmer = new ToPhred64Trimmer(33)
-    val rdd: RDD[FastqRecord] = sc.parallelize(List(FastqRecord("READ", "ATCGA", "+", "!,7BK")))
+    val trimmer = new ToPhred64Trimmer()
+    val rdd: RDD[FastqRecord] = sc.parallelize(List(FastqRecord("READ", "ATCGA", "+", "!,7BK", 33)))
 
     val result = trimmer(rdd)
 
-    assert(result.first() === FastqRecord("READ", "ATCGA", "+", "@KVaj"))
+    assert(result.first() === FastqRecord("READ", "ATCGA", "+", "@KVaj", 64))
   }
 
   it should "ignore convertion" in {
-    val trimmer = new ToPhred64Trimmer(64)
-    val rdd: RDD[FastqRecord] = sc.parallelize(List(FastqRecord("READ", "ATCGA", "+", "@KVaj")))
+    val trimmer = new ToPhred64Trimmer()
+    val rdd: RDD[FastqRecord] = sc.parallelize(List(FastqRecord("READ", "ATCGA", "+", "@KVaj", 64)))
 
     val result = trimmer(rdd)
 
-    assert(result.first() === FastqRecord("READ", "ATCGA", "+", "@KVaj"))
+    assert(result.first() === FastqRecord("READ", "ATCGA", "+", "@KVaj", 64))
   }
 }

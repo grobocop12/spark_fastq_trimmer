@@ -17,26 +17,26 @@ class LeadingTrimmerTest extends AnyFlatSpec {
   private val sc = session.sparkContext
 
   it should "trim first two leading quals" in {
-    val trimmer = new LeadingTrimmer(6, 33)
-    val rdd: RDD[FastqRecord] = sc.parallelize(List(FastqRecord("READ", "ATCG", "+", "!!((")))
+    val trimmer = new LeadingTrimmer(6)
+    val rdd: RDD[FastqRecord] = sc.parallelize(List(FastqRecord("READ", "ATCG", "+", "!!((", 33)))
 
     val result = trimmer(rdd)
 
-    assert(result.first() === FastqRecord("READ", "CG", "+", "(("))
+    assert(result.first() === FastqRecord("READ", "CG", "+", "((", 33))
   }
 
   it should "not trim any quals" in {
-    val trimmer = new LeadingTrimmer(0, 33)
-    val rdd: RDD[FastqRecord] = sc.parallelize(List(FastqRecord("READ", "ATCG", "+", "!!((")))
+    val trimmer = new LeadingTrimmer(0)
+    val rdd: RDD[FastqRecord] = sc.parallelize(List(FastqRecord("READ", "ATCG", "+", "!!((", 33)))
 
     val result = trimmer(rdd)
 
-    assert(result.first() === FastqRecord("READ", "ATCG", "+", "!!(("))
+    assert(result.first() === FastqRecord("READ", "ATCG", "+", "!!((", 33))
   }
 
   it should "trim entire record" in {
-    val trimmer = new LeadingTrimmer(8, 33)
-    val rdd: RDD[FastqRecord] = sc.parallelize(List(FastqRecord("READ", "ATCG", "+", "!!((")))
+    val trimmer = new LeadingTrimmer(8)
+    val rdd: RDD[FastqRecord] = sc.parallelize(List(FastqRecord("READ", "ATCG", "+", "!!((", 33)))
 
     val result = trimmer(rdd)
 
