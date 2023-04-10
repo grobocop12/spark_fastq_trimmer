@@ -29,7 +29,7 @@ class SingleEndMode extends Mode {
       PHRED_SAMPLE_SIZE)))
       .asInstanceOf[Int]
     val recordsWithOffset = records.map(f => FastqRecord(f.name, f.sequence, f.comment, f.quality, phredOffset))
-    val trimmers = createTrimmers(argsMap("trimmers").asInstanceOf[List[String]], phredOffset)
+    val trimmers = createTrimmers(argsMap("trimmers").asInstanceOf[List[String]])
 
     val trimmedRecords = applyTrimmer(recordsWithOffset, trimmers)
 
