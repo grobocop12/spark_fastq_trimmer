@@ -5,5 +5,7 @@ case class FastqRecord(name: String, sequence: String, comment: String, quality:
 
   override def toString = s"$name\n$sequence\n$comment\n$quality"
 
-  def qualityAsInteger: Array[Int] = quality.map(c => c.toInt - phredOffset).toArray
+  def qualityAsInteger(zeroNs: Boolean = true): Array[Int] = quality.map(c => {
+    if (zeroNs && c == 'N') 0 else c.toInt - phredOffset
+  }).toArray
 }

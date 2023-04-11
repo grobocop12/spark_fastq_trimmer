@@ -4,7 +4,6 @@ import org.apache.spark.rdd.RDD
 import pl.polsl.fastq.data.FastqRecord
 
 import scala.annotation.tailrec
-import scala.util.control.Breaks.break
 
 class SlidingWindowTrimmer(windowLength: Int, requiredQuality: Float) extends Trimmer {
   private val totalRequiredQuality: Float = windowLength * requiredQuality
@@ -14,7 +13,7 @@ class SlidingWindowTrimmer(windowLength: Int, requiredQuality: Float) extends Tr
   private def trim(in: FastqRecord): FastqRecord = {
 
     if (in.sequence.length < windowLength) return null
-    val qualitySums = in.qualityAsInteger.sliding(windowLength).map(_.sum)
+    val qualitySums = in.qualityAsInteger().sliding(windowLength).map(_.sum)
     if (qualitySums.next() < totalRequiredQuality) {
       null
     } else {

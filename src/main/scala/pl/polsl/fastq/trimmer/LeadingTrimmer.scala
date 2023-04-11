@@ -8,7 +8,7 @@ class LeadingTrimmer(qual: Int) extends Trimmer {
     .filter(_ != null)
 
   private def trimLeading(rec: FastqRecord): FastqRecord = {
-    val idx = rec.qualityAsInteger.indexWhere(_ >= qual)
+    val idx = rec.qualityAsInteger().indexWhere(_ >= qual)
     if (idx > 0)
       FastqRecord(rec.name, rec.sequence.substring(idx), rec.comment, rec.quality.substring(idx), rec.phredOffset)
     else if (idx == 0)
