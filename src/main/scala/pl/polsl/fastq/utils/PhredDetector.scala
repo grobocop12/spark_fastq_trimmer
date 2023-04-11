@@ -4,7 +4,7 @@ import pl.polsl.fastq.data.FastqRecord
 
 object PhredDetector {
   def apply(fastq: Array[FastqRecord]): Int = {
-    val quals = fastq.flatMap(_.qualityAsInteger)
+    val quals = fastq.flatMap(_.qualityAsInteger(false))
     val phred33Total = quals
       .count(q => 33 <= q && q <= 58)
     val phred64Total = quals
