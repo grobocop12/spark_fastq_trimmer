@@ -1,6 +1,5 @@
 package pl.polsl.fastq
 
-import org.apache.log4j.Logger
 import pl.polsl.fastq.mode.{HelpMode, PairedEndMode, SingleEndMode}
 import pl.polsl.fastq.utils.{ArgsParser, UsagePrinter}
 
