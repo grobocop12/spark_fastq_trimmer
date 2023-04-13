@@ -18,6 +18,7 @@ object TrimmerFactory {
         new BaseCountTrimmer(bases, minCount, maxCount)
       case "CROP" => new CropTrimmer(args.toInt)
       case "HEADCROP" => new HeadCropTrimmer(args.toInt)
+      case "ILLUMINACLIP" => IlluminaClippingTrimmer.createTrimmer(args.split(":"))
       case "LEADING" => new LeadingTrimmer(args.toInt)
       case "MINLEN" => new MinLenTrimmer(args.toInt)
       case "MAXINFO" =>
