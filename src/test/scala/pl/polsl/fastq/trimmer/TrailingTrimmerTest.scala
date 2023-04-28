@@ -21,7 +21,7 @@ class TrailingTrimmerTest extends AnyFlatSpec {
 
     val result = trimmer(rdd)
 
-    assert(result.first() === FastqRecord("READ", "AT", "+", "(("))
+    assert(result.first() === FastqRecord("READ", "AT", "+", "((", 33))
   }
 
   it should "not trim any quals" in {
