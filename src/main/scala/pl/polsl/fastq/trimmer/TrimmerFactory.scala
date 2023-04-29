@@ -29,7 +29,6 @@ object TrimmerFactory {
         val splittedArgs = args.split(":")
         new SlidingWindowTrimmer(splittedArgs(0).toInt, splittedArgs(1).toFloat)
       case "TAILCROP" => new TailCropTrimmer(args.toInt)
-      case "LEADING" => new LeadingTrimmer(args.toInt)
       case "TRAILING" => new TrailingTrimmer(args.toInt)
       case "TOPHRED33" => new ToPhred33Trimmer()
       case "TOPHRED64" => new ToPhred64Trimmer()

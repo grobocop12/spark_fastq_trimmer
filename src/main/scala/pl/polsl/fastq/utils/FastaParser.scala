@@ -25,17 +25,17 @@ class FastaParser(val file: File) {
 
     while (current.nonEmpty && !currentLine.get.startsWith(">")) currentLine = Option(reader.readLine)
 
-    if (currentLine != null && currentLine.startsWith(">")) {
-      val fullName = currentLine.substring(1).trim
+    if (currentLine.nonEmpty && currentLine.get.startsWith(">")) {
+      val fullName = currentLine.get.substring(1).trim
       val tokens = fullName.split("[\\| ]")
       val name = tokens(0)
       val builder = new StringBuilder
-      currentLine = reader.readLine
-      while (currentLine != null && !currentLine.startsWith(">")) {
-        if (!currentLine.startsWith(";")) builder.append(currentLine.trim)
-        currentLine = reader.readLine
+      currentLine = Option(reader.readLine)
+      while (currentLine.nonEmpty && !currentLine.get.startsWith(">")) {
+        if (!currentLine.get.startsWith(";")) builder.append(currentLine.get.trim)
+        currentLine = Option(reader.readLine)
       }
-      current = new FastaRecord(name, builder.toString.trim, fullName)
+      current = Option(new FastaRecord(name, builder.toString.trim, fullName))
     }
   }
 

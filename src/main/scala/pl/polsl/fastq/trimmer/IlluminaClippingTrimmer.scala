@@ -7,7 +7,6 @@ import pl.polsl.fastq.trimmer.IlluminaClippingTrimmer.{LOG10_4, PREFIX, SUFFIX_F
 import pl.polsl.fastq.utils.FastaParser
 
 import java.io.File
-import java.util
 import scala.collection.mutable
 
 class IlluminaClippingTrimmer(val seedMaxMiss: Int,
@@ -17,9 +16,9 @@ class IlluminaClippingTrimmer(val seedMaxMiss: Int,
                               val palindromeKeepBooth: Boolean) extends Trimmer {
   val minSequenceOverlap = calculateMinSequenceOverlap()
   val prefixPairs = new mutable.ListBuffer[IlluminaPrefixPair]()
-  val commonSeqs = new mutable.HashSet[IlluminaClippingSeq]()
-  val forwardSeqs = new mutable.HashSet[IlluminaClippingSeq]()
-  val reverseSeqs = new mutable.HashSet[IlluminaClippingSeq]()
+  var commonSeqs = new mutable.HashSet[IlluminaClippingSeq]()
+  var forwardSeqs = new mutable.HashSet[IlluminaClippingSeq]()
+  var reverseSeqs = new mutable.HashSet[IlluminaClippingSeq]()
 
   override def apply(in: RDD[FastqRecord]): RDD[FastqRecord] = ???
 
@@ -48,19 +47,32 @@ class IlluminaClippingTrimmer(val seedMaxMiss: Int,
         commonSeqMap.addOne((rec.name, rec))
       }
     }
-    new mutable.HashSet[String].addAll(forwardPrefix)
+    val prefixSet = new mutable.HashSet[String].addAll(forwardPrefix)
       .intersect(reversePrefix)
-//      .map()
-    ???
+    //      .map()
+    for (prefix <- prefixSet) {
+      val forwardName = prefix + SUFFIX_F
+      val reverseName = prefix + SUFFIX_R
+
+      val forwardRec = forwardSeqMap.remove(forwardName).get
+      val reverseRec = reverseSeqMap.remove(reverseName).get
+
+      prefixPairs += new IlluminaPrefixPair(forwardRec.sequence, reverseRec.sequence, seedMaxMiss)
+    }
+    forwardSeqs = mapClippingSet(forwardSeqMap)
+    reverseSeqs = mapClippingSet(reverseSeqMap)
+    commonSeqs = mapClippingSet(commonSeqMap)
   }
+
+  private def mapClippingSet(value: mutable.HashMap[String, FastaRecord]): mutable.HashSet[IlluminaClippingSeq] = ???
 }
 
 object IlluminaClippingTrimmer {
-  private final val LOG10_4 = 0.60206f
-  private final val SUFFIX_F = "/1"
-  private final val SUFFIX_R = "/2"
-  private final val PREFIX = "Prefix"
-  private final val INTERLEAVE = 4
+  final val LOG10_4 = 0.60206f
+  final val SUFFIX_F = "/1"
+  final val SUFFIX_R = "/2"
+  final val PREFIX = "Prefix"
+  final val INTERLEAVE = 4
 
   def createTrimmer(args: Array[String]): IlluminaClippingTrimmer = {
     val file = new File(args(0))
