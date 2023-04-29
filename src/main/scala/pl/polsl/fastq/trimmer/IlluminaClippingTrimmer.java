@@ -6,6 +6,7 @@ import org.apache.spark.rdd.RDD;
 import pl.polsl.fastq.data.FastaRecord;
 import pl.polsl.fastq.data.FastqRecord;
 import pl.polsl.fastq.utils.FastaParser;
+import scala.reflect.ClassTag;
 
 import java.io.File;
 import java.io.IOException;
@@ -20,27 +21,31 @@ public class IlluminaClippingTrimmer implements Trimmer {
 
     private final static float LOG10_4 = 0.60206f;
 
-    private Logger logger;
+    private final Logger logger;
 
-    private int seedMaxMiss;
-    private int minPalindromeLikelihood;
-    // private int minPalindromeOverlap;
+    private final int seedMaxMiss;
+    private final int minPalindromeLikelihood;
 
-    private int minSequenceLikelihood;
+    private final int minSequenceLikelihood;
     private int minSequenceOverlap;
 
-    private int minPrefix;
+    private final int minPrefix;
     public boolean palindromeKeepBoth;
 
     private List<IlluminaPrefixPair> prefixPairs;
 
-    private Set<IlluminaClippingSeq> forwardSeqs;
+    private Set<IlluminaClippingSeq> forwardSeqs = new HashSet<>();
     private Set<IlluminaClippingSeq> reverseSeqs;
     private Set<IlluminaClippingSeq> commonSeqs;
 
+    @Override
+    public RDD<FastqRecord> apply(RDD<FastqRecord> in) {
+        return in.map(f -> processRecords(new FastqRecord[]{f})[0], ClassTag.apply(FastqRecord.class));
+    }
 
-    public static IlluminaClippingTrimmer makeIlluminaClippingTrimmer(Logger logger, String args) throws IOException {
-        String arg[] = args.split(":");
+
+    public static IlluminaClippingTrimmer makeIlluminaClippingTrimmer(Logger logger, String args) {
+        String[] arg = args.split(":");
 
         File seqs = new File(arg[0]);
 
@@ -85,10 +90,9 @@ public class IlluminaClippingTrimmer implements Trimmer {
         if (minSequenceOverlap > 15)
             minSequenceOverlap = 15;
 
-        prefixPairs = new ArrayList<IlluminaPrefixPair>();
-        commonSeqs = new HashSet<IlluminaClippingSeq>();
-        forwardSeqs = new HashSet<IlluminaClippingSeq>();
-        reverseSeqs = new HashSet<IlluminaClippingSeq>();
+        prefixPairs = new ArrayList<>();
+        commonSeqs = new HashSet<>();
+        reverseSeqs = new HashSet<>();
     }
 
 
@@ -96,12 +100,12 @@ public class IlluminaClippingTrimmer implements Trimmer {
         FastaParser parser = new FastaParser(new File(seqPath));
         parser.parse();
 
-        Map<String, FastaRecord> forwardSeqMap = new HashMap<String, FastaRecord>();
-        Map<String, FastaRecord> reverseSeqMap = new HashMap<String, FastaRecord>();
-        Map<String, FastaRecord> commonSeqMap = new HashMap<String, FastaRecord>();
+        Map<String, FastaRecord> forwardSeqMap = new HashMap<>();
+        Map<String, FastaRecord> reverseSeqMap = new HashMap<>();
+        Map<String, FastaRecord> commonSeqMap = new HashMap<>();
 
-        Set<String> forwardPrefix = new HashSet<String>();
-        Set<String> reversePrefix = new HashSet<String>();
+        Set<String> forwardPrefix = new HashSet<>();
+        Set<String> reversePrefix = new HashSet<>();
 
         while (parser.hasNext()) {
             FastaRecord rec = parser.next();
@@ -126,10 +130,10 @@ public class IlluminaClippingTrimmer implements Trimmer {
                 commonSeqMap.put(name, rec);
         }
 
-        Set<String> prefixSet = new HashSet<String>(forwardPrefix);
+        Set<String> prefixSet = new HashSet<>(forwardPrefix);
         prefixSet.retainAll(reversePrefix);
 
-        prefixPairs = new ArrayList<IlluminaPrefixPair>();
+        prefixPairs = new ArrayList<>();
 
         for (String prefix : prefixSet) {
             String forwardName = prefix + SUFFIX_F;
@@ -151,25 +155,9 @@ public class IlluminaClippingTrimmer implements Trimmer {
 
     }
 
-
-    void addPrefixPair(String prefix1, String prefix2) {
-        prefixPairs.add(new IlluminaPrefixPair(prefix1, prefix2));
-    }
-
-    void addClippingSeq(IlluminaClippingSeq clippingSeq, boolean forward, boolean reverse) {
-        if (forward) {
-            if (reverse)
-                commonSeqs.add(clippingSeq);
-            else
-                forwardSeqs.add(clippingSeq);
-        } else
-            reverseSeqs.add(clippingSeq);
-    }
-
-
     private Set<IlluminaClippingSeq> mapClippingSet(Map<String, FastaRecord> map) {
-        Set<String> uniqueSeq = new HashSet<String>();
-        Set<IlluminaClippingSeq> out = new HashSet<IlluminaClippingSeq>();
+        Set<String> uniqueSeq = new HashSet<>();
+        Set<IlluminaClippingSeq> out = new HashSet<>();
 
         for (FastaRecord rec : map.values()) {
             String seq = rec.sequence();
@@ -202,8 +190,8 @@ public class IlluminaClippingTrimmer implements Trimmer {
         return (a < b) ? a : b;
     }
 
-    @Override
-    public RDD<FastqRecord> apply(RDD<FastqRecord> in) {
+
+    private FastqRecord[] processRecords(FastqRecord[] in) {
         FastqRecord forwardRec = null;
         FastqRecord reverseRec = null;
 
@@ -247,7 +235,11 @@ public class IlluminaClippingTrimmer implements Trimmer {
 
             if (toKeepForward != null) {
                 if (toKeepForward > 0)
-                    forwardRec = new FastqRecord(forwardRec, 0, toKeepForward);
+                    forwardRec = new FastqRecord(forwardRec.name(),
+                            forwardRec.sequence().substring(0, toKeepForward),
+                            forwardRec.comment(),
+                            forwardRec.quality().substring(0, toKeepForward),
+                            forwardRec.phredOffset());
                 else
                     forwardRec = null;
             }
@@ -265,7 +257,11 @@ public class IlluminaClippingTrimmer implements Trimmer {
 
             if (toKeepReverse != null) {
                 if (toKeepReverse > 0)
-                    reverseRec = new FastqRecord(reverseRec, 0, toKeepReverse);
+                    reverseRec = new FastqRecord(reverseRec.name(),
+                            reverseRec.sequence().substring(0, toKeepReverse),
+                            reverseRec.comment(),
+                            reverseRec.quality().substring(0, toKeepReverse),
+                            reverseRec.phredOffset());
                 else
                     reverseRec = null;
             }
@@ -281,8 +277,8 @@ public class IlluminaClippingTrimmer implements Trimmer {
 
 
     class IlluminaPrefixPair {
-        private String prefix1;
-        private String prefix2;
+        private final String prefix1;
+        private final String prefix2;
 
         private IlluminaPrefixPair(String prefix1, String prefix2) {
             logger.info("Using PrefixPair: '" + prefix1 + "' and '" + prefix2 + "'");
@@ -315,8 +311,8 @@ public class IlluminaClippingTrimmer implements Trimmer {
         private Integer palindromeReadsCompare(FastqRecord rec1, FastqRecord rec2) {
             int seedMax = seedMaxMiss * 2;
 
-            long pack1[] = packSeqInternal(getPrefix1() + rec1.sequence(), false);
-            long pack2[] = packSeqInternal(getPrefix2() + rec2.sequence(), true);
+            long[] pack1 = packSeqInternal(getPrefix1() + rec1.sequence(), false);
+            long[] pack2 = packSeqInternal(getPrefix2() + rec2.sequence(), true);
 
             int prefixLength = getPrefix1().length();
 
@@ -339,7 +335,7 @@ public class IlluminaClippingTrimmer implements Trimmer {
             int seqlen1 = rec1.sequence().length() + prefixLength;
             int seqlen2 = rec2.sequence().length() + prefixLength;
 
-            int maxCount = (seqlen1 > seqlen2 ? seqlen1 : seqlen2) - 15 - minPrefix;
+            int maxCount = (Math.max(seqlen1, seqlen2)) - 15 - minPrefix;
 
             while (count < maxCount) {
                 ref1 = pack1[refIndex];
@@ -404,12 +400,12 @@ public class IlluminaClippingTrimmer implements Trimmer {
             String prefix1 = getPrefix1();
             String prefix2 = getPrefix2();
 
-            int quals1[] = rec1.qualityAsInteger(true);
-            int quals2[] = rec2.qualityAsInteger(true);
+            int[] quals1 = rec1.qualityAsInteger(true);
+            int[] quals2 = rec2.qualityAsInteger(true);
 
             int prefixLength = prefix1.length();
 
-            float likelihood[] = new float[overlap];
+            float[] likelihood = new float[overlap];
 
             for (int i = 0; i < overlap; i++) {
                 int offset1 = i + skip1;
@@ -427,9 +423,9 @@ public class IlluminaClippingTrimmer implements Trimmer {
                     likelihood[i] = 0;
                 else if (ch1 != ch2) {
                     if (qual1 < qual2)
-                        likelihood[i] = -qual1 / 10;
+                        likelihood[i] = -qual1 / 10f;
                     else
-                        likelihood[i] = -qual2 / 10;
+                        likelihood[i] = -qual2 / 10f;
                 } else
                     likelihood[i] = LOG10_4;
             }
@@ -437,7 +433,7 @@ public class IlluminaClippingTrimmer implements Trimmer {
             return calculateTotal(likelihood);
         }
 
-        private float calculateTotal(float vals[]) {
+        private float calculateTotal(float[] vals) {
             float total = 0;
 
             for (float val : vals)
@@ -447,14 +443,10 @@ public class IlluminaClippingTrimmer implements Trimmer {
         }
     }
 
-    abstract class IlluminaClippingSeq {
+    abstract static class IlluminaClippingSeq {
         String seq;
-        long pack[];
+        long[] pack;
 
-
-        public String getSeq() {
-            return seq;
-        }
 
         public long[] getPack() {
             return pack;
@@ -465,12 +457,12 @@ public class IlluminaClippingTrimmer implements Trimmer {
 
         float calculateDifferenceQuality(FastqRecord rec, String clipSeq, int overlap, int recOffset) {
             String seq = rec.sequence();
-            int quals[] = rec.qualityAsInteger(true);
+            int[] quals = rec.qualityAsInteger(true);
 
-            int recPos = (recOffset > 0) ? recOffset : 0;
+            int recPos = Math.max(recOffset, 0);
             int clipPos = (recOffset < 0) ? -recOffset : 0;
 
-            float likelihood[] = new float[overlap];
+            float[] likelihood = new float[overlap];
 
             for (int i = 0; i < overlap; i++) {
                 char ch1 = seq.charAt(recPos);
@@ -487,13 +479,11 @@ public class IlluminaClippingTrimmer implements Trimmer {
                 clipPos++;
             }
 
-            float l = calculateMaximumRange(likelihood);
-
-            return l;
+            return calculateMaximumRange(likelihood);
         }
 
-        private float calculateMaximumRange(float vals[]) {
-            List<Float> merges = new ArrayList<Float>();
+        private float calculateMaximumRange(float[] vals) {
+            List<Float> merges = new ArrayList<>();
             float total = 0;
 
             for (float val : vals) {
@@ -545,7 +535,7 @@ public class IlluminaClippingTrimmer implements Trimmer {
     }
 
     class IlluminaShortClippingSeq extends IlluminaClippingSeq {
-        private long mask;
+        private final long mask;
 
         IlluminaShortClippingSeq(String seq) {
             logger.info("Using Short Clipping Sequence: '" + seq + "'");
@@ -565,10 +555,10 @@ public class IlluminaClippingTrimmer implements Trimmer {
             String recSequence = rec.sequence();
             String clipSequence = seq;
 
-            Set<Integer> offsetSet = new TreeSet<Integer>();
+            Set<Integer> offsetSet = new TreeSet<>();
 
-            long packRec[] = packSeqExternal(rec.sequence());
-            long packClip[] = getPack();
+            long[] packRec = packSeqExternal(rec.sequence());
+            long[] packClip = getPack();
             long mask = getMask();
 
             int packRecMax = packRec.length - minSequenceOverlap;
@@ -591,7 +581,7 @@ public class IlluminaClippingTrimmer implements Trimmer {
                 int recCompLength = offset > 0 ? recSequence.length() - offset : recSequence.length();
                 int clipCompLength = offset < 0 ? clipSequence.length() + offset : clipSequence.length();
 
-                int compLength = recCompLength < clipCompLength ? recCompLength : clipCompLength;
+                int compLength = Math.min(recCompLength, clipCompLength);
 
                 if (compLength > minSequenceOverlap) {
                     float seqLikelihood = calculateDifferenceQuality(rec, clipSequence, compLength, offset);
@@ -620,10 +610,10 @@ public class IlluminaClippingTrimmer implements Trimmer {
             String recSequence = rec.sequence();
             String clipSequence = seq;
 
-            Set<Integer> offsetSet = new TreeSet<Integer>();
+            Set<Integer> offsetSet = new TreeSet<>();
 
-            long packRec[] = packSeqExternal(rec.sequence());
-            long packClip[] = getPack();
+            long[] packRec = packSeqExternal(rec.sequence());
+            long[] packClip = getPack();
 
             int packRecMax = packRec.length - minSequenceOverlap;
             int packClipMax = packClip.length;
@@ -645,7 +635,7 @@ public class IlluminaClippingTrimmer implements Trimmer {
                 int recCompLength = offset > 0 ? recSequence.length() - offset : recSequence.length();
                 int clipCompLength = offset < 0 ? clipSequence.length() + offset : clipSequence.length();
 
-                int compLength = recCompLength < clipCompLength ? recCompLength : clipCompLength;
+                int compLength = Math.min(recCompLength, clipCompLength);
 
                 if (compLength > minSequenceOverlap) {
                     float seqLikelihood = calculateDifferenceQuality(rec, clipSequence, compLength, offset);
@@ -668,7 +658,7 @@ public class IlluminaClippingTrimmer implements Trimmer {
 
             this.seq = seq;
 
-            long fullPack[] = packSeqInternal(seq, false);
+            long[] fullPack = packSeqInternal(seq, false);
 
             pack = new long[(fullPack.length + INTERLEAVE - 1) / INTERLEAVE];
 
@@ -682,10 +672,10 @@ public class IlluminaClippingTrimmer implements Trimmer {
             String recSequence = rec.sequence();
             String clipSequence = seq;
 
-            Set<Integer> offsetSet = new TreeSet<Integer>();
+            Set<Integer> offsetSet = new TreeSet<>();
 
-            long packRec[] = packSeqExternal(rec.sequence());
-            long packClip[] = getPack();
+            long[] packRec = packSeqExternal(rec.sequence());
+            long[] packClip = getPack();
 
             int packRecMax = packRec.length - minSequenceOverlap;
             int packClipMax = packClip.length;
@@ -707,7 +697,7 @@ public class IlluminaClippingTrimmer implements Trimmer {
                 int recCompLength = offset > 0 ? recSequence.length() - offset : recSequence.length();
                 int clipCompLength = offset < 0 ? clipSequence.length() + offset : clipSequence.length();
 
-                int compLength = recCompLength < clipCompLength ? recCompLength : clipCompLength;
+                int compLength = Math.min(recCompLength, clipCompLength);
 
                 if (compLength > minSequenceOverlap) {
                     float seqLikelihood = calculateDifferenceQuality(rec, clipSequence, compLength, offset);
@@ -727,7 +717,7 @@ public class IlluminaClippingTrimmer implements Trimmer {
     private final static int BASE_T = 0x2;
 
     public static long[] packSeqExternal(String seq) {
-        long out[] = null;
+        long[] out;
 
         out = new long[seq.length()];
 
@@ -769,13 +759,13 @@ public class IlluminaClippingTrimmer implements Trimmer {
         long mask = 0xFFFFFFFFFFFFFFFFL;
 
         if (length < 16)
-            mask <<= (16 - length) * 4;
+            mask <<= (16 - length) * 4L;
 
         return mask;
     }
 
     public static long[] packSeqInternal(String seq, boolean reverse) {
-        long out[] = null;
+        long[] out;
 
         if (!reverse) {
             out = new long[seq.length() - 15];
@@ -807,38 +797,6 @@ public class IlluminaClippingTrimmer implements Trimmer {
         }
 
         return out;
-    }
-
-    public static String unpack(long pack) {
-        StringBuilder sb = new StringBuilder();
-
-        for (int i = 0; i < 16; i++) {
-            int tmp = (int) ((pack >>> 60) & 0xF);
-
-            switch (tmp) {
-                case BASE_A:
-                    sb.append("A");
-                    break;
-
-                case BASE_C:
-                    sb.append("C");
-                    break;
-
-                case BASE_G:
-                    sb.append("G");
-                    break;
-
-                case BASE_T:
-                    sb.append("T");
-                    break;
-
-                default:
-                    sb.append("[" + tmp + "]");
-            }
-            pack <<= 4;
-        }
-
-        return sb.toString();
     }
 
     private static int packCh(char ch, boolean rev) {
