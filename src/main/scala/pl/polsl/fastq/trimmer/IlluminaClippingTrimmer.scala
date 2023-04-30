@@ -24,8 +24,59 @@ class IlluminaClippingTrimmer private(var seedMaxMiss: Int = 0,
 
   override def apply(in: RDD[FastqRecord]): RDD[FastqRecord] = in.map(f => processRecords((f, null))._1).filter(_ != null)
 
-  private def processRecords(records: (FastqRecord, FastqRecord)): (FastqRecord, FastqRecord) = {
-    records
+  private def processRecords(in: (FastqRecord, FastqRecord)): (FastqRecord, FastqRecord) = {
+    var forwardRec: FastqRecord = null
+    var reverseRec: FastqRecord = null
+    if (in._1 != null) forwardRec = in._1
+    if (in._2 != null) reverseRec = in._2
+    var toKeepForward: Integer = null
+    var toKeepReverse: Integer = null
+    if (forwardRec != null && reverseRec != null) {
+      // First, check for a palindrome
+      for (pair <- prefixPairs) {
+        val toKeep = pair.palindromeReadsCompare(forwardRec, reverseRec)
+        if (toKeep != null) {
+          toKeepForward = min(toKeepForward, toKeep)
+          if (palindromeKeepBoth) toKeepReverse = min(toKeepReverse, toKeep)
+          else toKeepReverse = 0
+        }
+      }
+    }
+    // Also check each record for other nasties
+    if (forwardRec != null) {
+      if (toKeepForward == null || toKeepForward > 0) {
+        for (seq <- forwardSeqs) {
+          toKeepForward = min(toKeepForward, seq.readsSeqCompare(forwardRec))
+        }
+        for (seq <- commonSeqs) {
+          toKeepForward = min(toKeepForward, seq.readsSeqCompare(forwardRec))
+        }
+      }
+      // Keep the minimum
+      if (toKeepForward != null) if (toKeepForward > 0) forwardRec = FastqRecord(forwardRec.name, forwardRec.sequence.substring(0, toKeepForward), forwardRec.comment, forwardRec.quality.substring(0, toKeepForward), forwardRec.phredOffset)
+      else forwardRec = null
+    }
+    if (reverseRec != null) {
+      if (toKeepReverse == null || toKeepReverse > 0) {
+        for (seq <- reverseSeqs) {
+          toKeepReverse = min(toKeepReverse, seq.readsSeqCompare(reverseRec))
+        }
+        for (seq <- commonSeqs) {
+          toKeepReverse = min(toKeepReverse, seq.readsSeqCompare(reverseRec))
+        }
+      }
+      // Keep the minimum
+      if (toKeepReverse != null) if (toKeepReverse > 0) reverseRec = FastqRecord(reverseRec.name, reverseRec.sequence.substring(0, toKeepReverse), reverseRec.comment, reverseRec.quality.substring(0, toKeepReverse), reverseRec.phredOffset)
+      else reverseRec = null
+    }
+    (forwardRec, reverseRec)
+  }
+
+  private def min(a: Integer, b: Integer): Integer = {
+    if (a == null) return b
+    if (b == null) return a
+    if (a < b) a
+    else b
   }
 }
 
@@ -159,24 +210,25 @@ object IlluminaClippingTrimmer {
   private def packCh(ch: Char, rev: Boolean): Int = {
     if (!rev) ch match {
       case 'A' =>
-        return BASE_A
+        BASE_A
       case 'C' =>
-        return BASE_C
+        BASE_C
       case 'G' =>
-        return BASE_G
+        BASE_G
       case 'T' =>
-        return BASE_T
+        BASE_T
+      case _ => 0
     }
     else ch match {
       case 'A' =>
-        return BASE_T
+        BASE_T
       case 'C' =>
-        return BASE_G
+        BASE_G
       case 'G' =>
-        return BASE_C
+        BASE_C
       case 'T' =>
-        return BASE_A
+        BASE_A
+      case _ => 0
     }
-    0
   }
 }
