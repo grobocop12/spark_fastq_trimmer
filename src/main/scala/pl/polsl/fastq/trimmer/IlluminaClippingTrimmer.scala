@@ -1,14 +1,16 @@
 package pl.polsl.fastq.trimmer
 
 
-import org.apache.log4j.Logger
 import org.apache.spark.rdd.RDD
-import pl.polsl.fastq.data.FastqRecord
+import pl.polsl.fastq.data.{FastaRecord, FastqRecord}
 import pl.polsl.fastq.illumina._
+import pl.polsl.fastq.utils.FastaParser
+
+import java.io.File
+import scala.collection.mutable
 
 
-class IlluminaClippingTrimmer private(logger: Logger,
-                                      var seedMaxMiss: Int = 0,
+class IlluminaClippingTrimmer private(var seedMaxMiss: Int = 0,
                                       var minPalindromeLikelihood: Int = 0,
                                       var minSequenceLikelihood: Int = 0,
                                       var minSequenceOverlap: Int = 0,
@@ -38,20 +40,70 @@ object IlluminaClippingTrimmer {
   val BASE_G = 0x8
   val BASE_T = 0x2
 
-  def apply(logger: Logger, args: String): IlluminaClippingTrimmer = {
-    val seedMaxMiss = 1
-    val minPalindromeLikelihood = 1
-    val minSequenceLikelihood = 1
-    val minSequenceOverlap = 1
-    val minPrefix = 1
-    val palindromeKeepBoth = true
-    val prefix = "ATCG"
-    val seq = "ATCGATCGATCGATCGATCGATCGATCG"
-    new IlluminaClippingTrimmer(logger, seedMaxMiss, minPalindromeLikelihood, minSequenceLikelihood, minSequenceOverlap, minPrefix, palindromeKeepBoth,
-      List(IlluminaPrefixPair(prefix, prefix, seedMaxMiss, minPalindromeLikelihood, minSequenceLikelihood, minPrefix)),
-      Set(new IlluminaShortClippingSeq(seq, calcSingleMask(seq.length), packSeqExternal(seq), seedMaxMiss, minSequenceOverlap, minSequenceLikelihood)),
-      Set(new IlluminaMediumClippingSeq(seq, calcSingleMask(seq.length), packSeqExternal(seq), seedMaxMiss, minSequenceOverlap, minSequenceLikelihood)),
-      Set(IlluminaLongClippingSeq(seq, calcSingleMask(seq.length), seedMaxMiss, minSequenceOverlap, minSequenceLikelihood)))
+  def apply(seqs: File, seedMaxMiss: Int, minPalindromeLikelihood: Int, minSequenceLikelihood: Int, minPrefix: Int, palindromeKeepBoth: Boolean): IlluminaClippingTrimmer = {
+    val minSequenceOverlap = (minSequenceLikelihood / LOG10_4).toInt
+    val (prefixPairs, forward, reverse, common) = loadSequences(seqs, seedMaxMiss, minPalindromeLikelihood, minSequenceLikelihood, minPrefix, minSequenceOverlap)
+    new IlluminaClippingTrimmer(seedMaxMiss, minPalindromeLikelihood, minSequenceLikelihood, minSequenceOverlap, minPrefix, palindromeKeepBoth,
+      prefixPairs, forward, reverse, common)
+  }
+
+  def loadSequences(seqs: File, seedMaxMiss: Int, minPalindromeLikelihood: Int, minSequenceLikelihood: Int, minPrefix: Int, minSequenceOverlap: Int): (List[IlluminaPrefixPair], Set[IlluminaClippingSeq], Set[IlluminaClippingSeq], Set[IlluminaClippingSeq]) = {
+    val parser = new FastaParser(seqs)
+    parser.parseOne()
+    val forwardSeqMap = new mutable.HashMap[String, FastaRecord]
+    val reverseSeqMap = new mutable.HashMap[String, FastaRecord]
+    val commonSeqMap = new mutable.HashMap[String, FastaRecord]
+    val forwardPrefix = new mutable.HashSet[String]
+    val reversePrefix = new mutable.HashSet[String]
+    while (parser.hasNext) {
+      val rec = parser.next
+      val name = rec.name
+      if (name.endsWith(SUFFIX_F)) {
+        forwardSeqMap.put(name, rec)
+        if (name.startsWith(PREFIX)) {
+          val clippedName = name.substring(0, name.length - SUFFIX_F.length)
+          forwardPrefix.add(clippedName)
+        }
+      }
+      else if (name.endsWith(SUFFIX_R)) {
+        reverseSeqMap.put(name, rec)
+        if (name.startsWith(PREFIX)) {
+          val clippedName = name.substring(0, name.length - SUFFIX_R.length)
+          reversePrefix.add(clippedName)
+        }
+      }
+      else commonSeqMap.put(name, rec)
+    }
+    val prefixSet = new mutable.HashSet[String]()
+    prefixSet.addAll(forwardPrefix)
+    prefixSet.intersect(reversePrefix)
+    val prefixPairs = new mutable.ListBuffer[IlluminaPrefixPair]
+    for (prefix <- prefixSet) {
+      val forwardName = prefix + SUFFIX_F
+      val reverseName = prefix + SUFFIX_R
+      val forwardRec = forwardSeqMap.remove(forwardName).get
+      val reverseRec = reverseSeqMap.remove(reverseName).get
+      prefixPairs += new IlluminaPrefixPair(forwardRec.sequence, reverseRec.sequence, seedMaxMiss, minPalindromeLikelihood, minSequenceLikelihood, minPrefix)
+    }
+    val forwardSeqs = mapClippingSet(forwardSeqMap, seedMaxMiss, minSequenceOverlap, minSequenceLikelihood)
+    val reverseSeqs = mapClippingSet(reverseSeqMap, seedMaxMiss, minSequenceOverlap, minSequenceLikelihood)
+    val commonSeqs = mapClippingSet(commonSeqMap, seedMaxMiss, minSequenceOverlap, minSequenceLikelihood)
+    (prefixPairs.toList, forwardSeqs, reverseSeqs, commonSeqs)
+  }
+
+  private def mapClippingSet(map: mutable.Map[String, FastaRecord], seedMaxMiss: Int, minSequenceOverlap: Int, minSequenceLikelihood: Int) = {
+    val uniqueSeq = new mutable.HashSet[String]
+    val out = new mutable.HashSet[IlluminaClippingSeq]
+    for (rec <- map.values) {
+      val seq = rec.sequence
+      if (!uniqueSeq.contains(seq)) {
+        uniqueSeq.add(seq)
+        if (seq.length < 16) out.add(new IlluminaShortClippingSeq(seq, calcSingleMask(seq.length), packSeqExternal(seq), seedMaxMiss, minSequenceOverlap, minSequenceLikelihood))
+        else if (seq.length < 24) out.add(new IlluminaMediumClippingSeq(seq, calcSingleMask(seq.length), packSeqExternal(seq), seedMaxMiss, minSequenceOverlap, minSequenceLikelihood))
+        else out.add(IlluminaLongClippingSeq(seq, calcSingleMask(seq.length), seedMaxMiss, minSequenceOverlap, minSequenceLikelihood))
+      }
+    }
+    out.toSet
   }
 
   def calcSingleMask(length: Int): Long = {
