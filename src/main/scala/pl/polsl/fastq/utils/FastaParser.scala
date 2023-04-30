@@ -10,13 +10,13 @@ class FastaParser(val file: File) {
   var current: Option[FastaRecord] = None
   var currentLine: Option[String] = None
 
-  def parse(): Unit = {
+  def hasNext: Boolean = current.nonEmpty
 
+  def next: FastaRecord = {
+    val current = this.current.get
+    parseOne()
+    current
   }
-
-  def hasNext: Boolean = ???
-
-  def next: FastaRecord = ???
 
   def parseOne(): Unit = {
     current = None
