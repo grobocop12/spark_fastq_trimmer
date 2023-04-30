@@ -3,8 +3,8 @@ package pl.polsl.fastq.illumina
 import pl.polsl.fastq.data.FastqRecord
 import pl.polsl.fastq.trimmer.IlluminaClippingTrimmer.LOG10_4
 
-import scala.collection.JavaConverters._
 import scala.collection.mutable.ArrayBuffer
+import scala.jdk.CollectionConverters._
 
 abstract class IlluminaClippingSeq(seq: String, mask: Long, pack: Array[Long], seedMaxMiss: Int, minSequenceOverlap: Int, minSequenceLikelihood: Int) extends Serializable {
 
@@ -12,7 +12,7 @@ abstract class IlluminaClippingSeq(seq: String, mask: Long, pack: Array[Long], s
 
   def calculateDifferenceQuality(rec: FastqRecord, clipSeq: String, overlap: Int, recOffset: Int): Float = {
     val seq = rec.sequence
-    val quals = rec.qualityAsInteger(true)
+    val quals = rec.qualityAsInteger()
     var recPos = Math.max(recOffset, 0)
     var clipPos = if (recOffset < 0) -recOffset
     else 0
@@ -64,63 +64,5 @@ abstract class IlluminaClippingSeq(seq: String, mask: Long, pack: Array[Long], s
     }
 
     Math.max(merges.asScala.max, 0)
-  }
-}
-
-object IlluminaClippingSeq {
-  val BASE_A = 0x1
-  val BASE_C = 0x4
-  val BASE_G = 0x8
-  val BASE_T = 0x2
-
-  def calcSingleMask(length: Int): Long = {
-    var mask = 0xFFFFFFFFFFFFFFFFL
-    if (length < 16) mask <<= (16 - length) * 4L
-    mask
-  }
-
-  def packSeqExternal(seq: String): Array[Long] = {
-    var out: Array[Long] = null
-    out = new Array[Long](seq.length)
-    var pack = 0
-    var offset = 0
-    for (i <- 0 until 15) {
-      var tmp = 0
-      if (offset < seq.length) tmp = packCh(seq.charAt(offset), rev = false)
-      pack = (pack << 4) | tmp
-      offset += 1
-    }
-    for (i <- 0 until seq.length) {
-      var tmp = 0
-      if (offset < seq.length) tmp = packCh(seq.charAt(offset), false)
-      pack = (pack << 4) | tmp
-      out(i) = pack
-      offset += 1
-    }
-    out
-  }
-
-  private def packCh(ch: Char, rev: Boolean): Int = {
-    if (!rev) ch match {
-      case 'A' =>
-        return BASE_A
-      case 'C' =>
-        return BASE_C
-      case 'G' =>
-        return BASE_G
-      case 'T' =>
-        return BASE_T
-    }
-    else ch match {
-      case 'A' =>
-        return BASE_T
-      case 'C' =>
-        return BASE_G
-      case 'G' =>
-        return BASE_C
-      case 'T' =>
-        return BASE_A
-    }
-    0
   }
 }

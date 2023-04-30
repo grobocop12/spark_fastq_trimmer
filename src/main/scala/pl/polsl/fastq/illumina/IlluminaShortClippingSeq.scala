@@ -1,7 +1,7 @@
 package pl.polsl.fastq.illumina
 
 import pl.polsl.fastq.data.FastqRecord
-import pl.polsl.fastq.illumina.IlluminaClippingSeq.{calcSingleMask, packSeqExternal}
+import pl.polsl.fastq.trimmer.IlluminaClippingTrimmer.{calcSingleMask, packSeqExternal}
 
 import scala.collection.mutable
 
