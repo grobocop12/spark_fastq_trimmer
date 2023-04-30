@@ -1,5 +1,7 @@
 package pl.polsl.fastq.trimmer
 
+import java.io.File
+
 object TrimmerFactory {
   def createTrimmers(trimmerNames: List[String]): List[Trimmer] =
     trimmerNames.map(createTrimmer)
@@ -11,13 +13,22 @@ object TrimmerFactory {
     name match {
       case "AVGQUAL" => new AvgQualTrimmer(args.toInt)
       case "BASECOUNT" =>
-        val splittedArgs = args.split(":").toSeq
-        val bases = splittedArgs.head
-        val minCount: Int = if (splittedArgs.length > 1) splittedArgs(1).toInt else 0
-        val maxCount: Integer = if (splittedArgs.length > 2) splittedArgs(2).toInt else null
+        val arg = args.split(":").toSeq
+        val bases = arg.head
+        val minCount: Int = if (arg.length > 1) arg(1).toInt else 0
+        val maxCount: Integer = if (arg.length > 2) arg(2).toInt else null
         new BaseCountTrimmer(bases, minCount, maxCount)
       case "CROP" => new CropTrimmer(args.toInt)
       case "HEADCROP" => new HeadCropTrimmer(args.toInt)
+      case "ILLUMINACLIP" =>
+        val arg: Array[String] = args.split(":")
+        val seqs: File = new File(arg(0))
+        val seedMaxMiss: Int = arg(1).toInt
+        val minPalindromeLikelihood: Int = arg(2).toInt
+        val minSequenceLikelihood: Int = arg(3).toInt
+        val minPrefix: Int = if (arg.length > 4) arg(4).toInt else 1
+        val palindromeKeepBoth: Boolean = if (arg.length > 5) arg(5).toLowerCase.toBoolean else false
+        IlluminaClippingTrimmer(seqs, seedMaxMiss, minPalindromeLikelihood, minSequenceLikelihood, minPrefix, palindromeKeepBoth)
       case "LEADING" => new LeadingTrimmer(args.toInt)
       case "MINLEN" => new MinLenTrimmer(args.toInt)
       case "MAXINFO" =>
@@ -28,7 +39,6 @@ object TrimmerFactory {
         val splittedArgs = args.split(":")
         new SlidingWindowTrimmer(splittedArgs(0).toInt, splittedArgs(1).toFloat)
       case "TAILCROP" => new TailCropTrimmer(args.toInt)
-      case "LEADING" => new LeadingTrimmer(args.toInt)
       case "TRAILING" => new TrailingTrimmer(args.toInt)
       case "TOPHRED33" => new ToPhred33Trimmer()
       case "TOPHRED64" => new ToPhred64Trimmer()
