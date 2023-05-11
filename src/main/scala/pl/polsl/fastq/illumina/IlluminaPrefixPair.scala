@@ -48,15 +48,16 @@ case class IlluminaPrefixPair(prefix1: String, prefix2: String, seedMaxMiss: Int
   private def compCh(ch: Char): Char = {
     ch match {
       case 'A' =>
-        return 'T'
+        'T'
       case 'C' =>
-        return 'G'
+        'G'
       case 'G' =>
-        return 'C'
+        'C'
       case 'T' =>
-        return 'A'
+        'A'
+      case _ =>
+        'N'
     }
-    'N'
   }
 
   private def calculatePalindromeDifferenceQuality(rec1: FastqRecord, rec2: FastqRecord, overlap: Int, skip1: Int, skip2: Int): Float = {

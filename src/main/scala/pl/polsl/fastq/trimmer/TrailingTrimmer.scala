@@ -3,14 +3,14 @@ package pl.polsl.fastq.trimmer
 import org.apache.spark.rdd.RDD
 import pl.polsl.fastq.data.FastqRecord
 
-class TrailingTrimmer(qual: Int) extends Trimmer {
-  override def apply(in: RDD[FastqRecord]): RDD[FastqRecord] =
-    in.map(this.trimTrailing).filter(_ != null)
+class TrailingTrimmer(qual: Int) extends SingleTrimmer {
+  //  override def apply(in: Array[FastqRecord]): Array[FastqRecord] =
+  //    in.map(this.trimTrailing).filter(_ != null)
 
-  private def trimTrailing(rec: FastqRecord): FastqRecord = {
+  override protected def processRecord(rec:FastqRecord): FastqRecord = {
     val idx = rec.qualityAsInteger().reverse.indexWhere(_ >= qual)
     val length = rec.quality.length
-    if (idx > 0 && idx < (length-1))
+    if (idx > 0 && idx < (length - 1))
       FastqRecord(rec.name,
         rec.sequence.substring(0, length - idx),
         rec.comment,
@@ -21,4 +21,5 @@ class TrailingTrimmer(qual: Int) extends Trimmer {
     else
       null
   }
+
 }

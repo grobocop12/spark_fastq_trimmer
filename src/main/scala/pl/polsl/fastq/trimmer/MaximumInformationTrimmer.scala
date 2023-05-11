@@ -5,13 +5,13 @@ import pl.polsl.fastq.data.FastqRecord
 
 import scala.annotation.tailrec
 
-class MaximumInformationTrimmer(parLength: Int, strictness: Float) extends Trimmer {
+class MaximumInformationTrimmer(parLength: Int, strictness: Float) extends SingleTrimmer {
   private val maxQual = 60
   private val (lengthScore, qualProb) = initialize()
 
-  override def apply(in: RDD[FastqRecord]): RDD[FastqRecord] = in.map(trim).filter(_ != null)
+  //  override def apply(in: Array[FastqRecord]): Array[FastqRecord] = in.map(trim).filter(_ != null)
 
-  private def trim(rec: FastqRecord): FastqRecord = {
+  override protected def processRecord(rec:FastqRecord): FastqRecord = {
     val quals = rec.qualityAsInteger()
     val (maxScore, maxScorePosition) = calculateMaxScoreAndPosition(quals.zipWithIndex, 0L, Double.MinValue, 0)
     if (maxScorePosition < 1 || maxScore == 0.0) return null

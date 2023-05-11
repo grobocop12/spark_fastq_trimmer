@@ -8,6 +8,7 @@ import pl.polsl.fastq.trimmer.Trimmer
 import pl.polsl.fastq.trimmer.TrimmerFactory.createTrimmers
 import pl.polsl.fastq.utils.PhredDetector
 
+import java.util.Objects
 import scala.annotation.tailrec
 
 class SingleEndMode extends Mode {
@@ -36,7 +37,8 @@ class SingleEndMode extends Mode {
     val records = fastqLines.map(x => FastqRecord(x(0), x(1), x(2), x(3), phredOffset))
 
     applyTrimmer(records, trimmers)
-      .coalesce(1)
+      .filter(_ != null)
+//      .coalesce(1)
       .saveAsTextFile(argsMap("output").asInstanceOf[String])
 
     session.close
@@ -47,7 +49,9 @@ class SingleEndMode extends Mode {
     if (trimmers.isEmpty)
       records
     else {
-      applyTrimmer(trimmers.head(records), trimmers.tail)
+      //            applyTrimmer(trimmers.head(records), trimmers.tail)
+      //      applyTrimmer(records.map(f => trimmers.head(Array(f))(0)).filter(f => f != null), trimmers.tail)
+      applyTrimmer(records.map(trimmers.head.processSingle(_)), trimmers.tail)
     }
   }
 }

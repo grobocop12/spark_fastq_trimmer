@@ -5,20 +5,24 @@ import pl.polsl.fastq.data.FastqRecord
 
 import scala.annotation.tailrec
 
-class SlidingWindowTrimmer(windowLength: Int, requiredQuality: Float) extends Trimmer {
+class SlidingWindowTrimmer(windowLength: Int, requiredQuality: Float) extends SingleTrimmer {
   private val totalRequiredQuality: Float = windowLength * requiredQuality
 
-  override def apply(in: RDD[FastqRecord]): RDD[FastqRecord] = in.map(trim).filter(_ != null)
+  //  override def apply(in: Array[FastqRecord]): Array[FastqRecord] = in.map(trim).filter(_ != null)
 
-  private def trim(in: FastqRecord): FastqRecord = {
+  override protected def processRecord(rec:FastqRecord): FastqRecord = {
 
-    if (in.sequence.length < windowLength) return null
-    val qualitySums = in.qualityAsInteger().sliding(windowLength).map(_.sum)
+    if (rec.sequence.length < windowLength) return null
+    val qualitySums = rec.qualityAsInteger().sliding(windowLength).map(_.sum)
     if (qualitySums.next() < totalRequiredQuality) {
       null
     } else {
       val lengthToKeep = calculateLength(qualitySums, windowLength)
-      FastqRecord(in.name, in.sequence.substring(0, lengthToKeep), in.comment, in.quality.substring(0, lengthToKeep), in.phredOffset)
+      FastqRecord(rec.name,
+        rec.sequence.substring(0, lengthToKeep),
+        rec.comment,
+        rec.quality.substring(0, lengthToKeep),
+        rec.phredOffset)
     }
   }
 
