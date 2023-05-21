@@ -8,12 +8,19 @@ import pl.polsl.fastq.trimmer.Trimmer
 import pl.polsl.fastq.trimmer.TrimmerFactory.createTrimmers
 import pl.polsl.fastq.utils.PhredDetector
 
+import java.io._
+import java.nio.file.{FileSystems, Files}
 import scala.annotation.tailrec
+import scala.jdk.CollectionConverters.IteratorHasAsScala
+import scala.reflect.io.Directory
+import scala.util.matching.Regex
 
-class SingleEndMode extends Mode {
+class SingleEndMode extends TrimmingMode {
   private val PHRED_SAMPLE_SIZE = 100
 
   override def run(argsMap: Map[String, Any]): Unit = {
+    val output = argsMap("output").asInstanceOf[String]
+    val tempDirectory = s"$output-temp"
     val trimmers = createTrimmers(argsMap("trimmers").asInstanceOf[List[String]])
     val session = SparkSession
       .builder
@@ -36,9 +43,9 @@ class SingleEndMode extends Mode {
     val records = fastqLines.map(x => FastqRecord(x(0), x(1), x(2), x(3), phredOffset))
 
     applyTrimmer(records, trimmers)
-      .coalesce(1)
-      .saveAsTextFile(argsMap("output").asInstanceOf[String])
-
+      .saveAsTextFile(tempDirectory)
+    concatenateFiles(tempDirectory, output)
+    new Directory(new File(tempDirectory)).deleteRecursively()
     session.close
   }
 
@@ -47,7 +54,9 @@ class SingleEndMode extends Mode {
     if (trimmers.isEmpty)
       records
     else {
-      applyTrimmer(trimmers.head(records), trimmers.tail)
+      applyTrimmer(records.map(trimmers.head.processSingle(_))
+        .filter(_ != null),
+        trimmers.tail)
     }
   }
 }

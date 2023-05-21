@@ -22,13 +22,18 @@ class IlluminaClippingTrimmer private(var seedMaxMiss: Int = 0,
                                       val commonSeqs: Set[IlluminaClippingSeq]
                                      ) extends Trimmer {
 
-  override def apply(in: RDD[FastqRecord]): RDD[FastqRecord] = in.map(f => processRecords((f, null))._1).filter(_ != null)
+  //  override def apply(in: Array[FastqRecord]): Array[FastqRecord] = in.map(f => processRecords((f, null))._1).filter(_ != null)
+
+  //  override def trimPair(in: RDD[(Option[FastqRecord], Option[FastqRecord])]): RDD[(Option[FastqRecord], Option[FastqRecord])] = ???
+  //  override def apply(in: Array[FastqRecord]): Array[FastqRecord] = processRecords(in)
+  //  override def apply(in: FastqRecord): FastqRecord = ???
+  override def processSingle(in: FastqRecord): FastqRecord = processRecords((in, null))._1
+
+  override def processPair(in: (FastqRecord, FastqRecord)): (FastqRecord, FastqRecord) = processRecords(in)
 
   private def processRecords(in: (FastqRecord, FastqRecord)): (FastqRecord, FastqRecord) = {
-    var forwardRec: FastqRecord = null
-    var reverseRec: FastqRecord = null
-    if (in._1 != null) forwardRec = in._1
-    if (in._2 != null) reverseRec = in._2
+    var forwardRec: FastqRecord = in._1
+    var reverseRec: FastqRecord = in._2
     var toKeepForward: Integer = null
     var toKeepReverse: Integer = null
     if (forwardRec != null && reverseRec != null) {
