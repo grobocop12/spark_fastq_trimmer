@@ -13,7 +13,7 @@ class BaseCountTrimmerTest extends AnyFlatSpec {
 
     val result = trimmer.processSingle(record)
 
-    assert(result !== null)
+    assert(result === null)
   }
 
   it should "keep sequence" in {
@@ -26,6 +26,6 @@ class BaseCountTrimmerTest extends AnyFlatSpec {
 
     val result = trimmer.processSingle(record)
 
-    assert(result === null)
+    assert(result !== null)
   }
 }
