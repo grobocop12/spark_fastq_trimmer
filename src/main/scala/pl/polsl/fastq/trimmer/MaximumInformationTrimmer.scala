@@ -1,6 +1,5 @@
 package pl.polsl.fastq.trimmer
 
-import org.apache.spark.rdd.RDD
 import pl.polsl.fastq.data.FastqRecord
 
 import scala.annotation.tailrec
@@ -9,9 +8,7 @@ class MaximumInformationTrimmer(parLength: Int, strictness: Float) extends Singl
   private val maxQual = 60
   private val (lengthScore, qualProb) = initialize()
 
-  //  override def apply(in: Array[FastqRecord]): Array[FastqRecord] = in.map(trim).filter(_ != null)
-
-  override protected def processRecord(rec:FastqRecord): FastqRecord = {
+  override protected def processRecord(rec: FastqRecord): FastqRecord = {
     val quals = rec.qualityAsInteger()
     val (maxScore, maxScorePosition) = calculateMaxScoreAndPosition(quals.zipWithIndex, 0L, Double.MinValue, 0)
     if (maxScorePosition < 1 || maxScore == 0.0) return null

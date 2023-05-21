@@ -15,7 +15,7 @@ import scala.jdk.CollectionConverters.IteratorHasAsScala
 import scala.reflect.io.Directory
 import scala.util.matching.Regex
 
-class SingleEndMode extends Mode {
+class SingleEndMode extends TrimmingMode {
   private val PHRED_SAMPLE_SIZE = 100
 
   override def run(argsMap: Map[String, Any]): Unit = {
@@ -58,27 +58,5 @@ class SingleEndMode extends Mode {
         .filter(_ != null),
         trimmers.tail)
     }
-  }
-
-
-  private def concatenateFiles(tempOutput: String, output: String): Unit = {
-    val pattern: Regex = "part-\\d+".r
-    val dir = FileSystems.getDefault.getPath(tempOutput)
-    val sw = new BufferedWriter(new FileWriter(output))
-    Files.list(dir)
-      .iterator()
-      .asScala
-      .filter(p => pattern.matches(p.getFileName.toString))
-      .foreach(p => {
-        val reader = new BufferedReader(new FileReader(p.toString))
-        var line: String = reader.readLine()
-        while (line != null) {
-          sw.write(line)
-          sw.newLine()
-          line = reader.readLine()
-        }
-        reader.close()
-      })
-    sw.close()
   }
 }
