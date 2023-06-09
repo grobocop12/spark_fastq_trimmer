@@ -51,8 +51,13 @@ class IlluminaClippingTrimmer private(var seedMaxMiss: Int = 0,
         }
       }
       // Keep the minimum
-      if (toKeepForward != null) if (toKeepForward > 0) forwardRec = FastqRecord(forwardRec.name, forwardRec.sequence.substring(0, toKeepForward), forwardRec.comment, forwardRec.quality.substring(0, toKeepForward), forwardRec.phredOffset)
-      else forwardRec = null
+      if (toKeepForward != null)
+        if (toKeepForward > 0)
+          forwardRec = FastqRecord(forwardRec.name,
+            forwardRec.sequence.substring(0, toKeepForward),
+            forwardRec.quality.substring(0, toKeepForward),
+            forwardRec.phredOffset)
+        else forwardRec = null
     }
     if (reverseRec != null) {
       if (toKeepReverse == null || toKeepReverse > 0) {
@@ -64,7 +69,7 @@ class IlluminaClippingTrimmer private(var seedMaxMiss: Int = 0,
         }
       }
       // Keep the minimum
-      if (toKeepReverse != null) if (toKeepReverse > 0) reverseRec = FastqRecord(reverseRec.name, reverseRec.sequence.substring(0, toKeepReverse), reverseRec.comment, reverseRec.quality.substring(0, toKeepReverse), reverseRec.phredOffset)
+      if (toKeepReverse != null) if (toKeepReverse > 0) reverseRec = FastqRecord(reverseRec.name, reverseRec.sequence.substring(0, toKeepReverse), reverseRec.quality.substring(0, toKeepReverse), reverseRec.phredOffset)
       else reverseRec = null
     }
     (forwardRec, reverseRec)
@@ -161,36 +166,37 @@ object IlluminaClippingTrimmer {
   }
 
   def packSeqInternal(seq: String, reverse: Boolean): Array[Long] = {
-    var out: Array[Long] = null
     if (!reverse) {
-      out = new Array[Long](seq.length - 15)
+      val out = new Array[Long](seq.length - 15)
       var pack = 0
       for (i <- 0 until seq.length) {
         val tmp = packCh(seq.charAt(i), rev = false)
         pack = (pack << 4) | tmp
         if (i >= 15) out(i - 15) = pack
       }
+      out
     }
     else {
-      out = new Array[Long](seq.length - 15)
+      val out = new Array[Long](seq.length - 15)
       var pack = 0
       for (i <- 0 until seq.length) {
         val tmp = packCh(seq.charAt(i), rev = true)
         pack = (pack >>> 4) | tmp << 60
         if (i >= 15) out(i - 15) = pack
       }
+      out
     }
-    out
   }
 
   def packSeqExternal(seq: String): Array[Long] = {
-    var out: Array[Long] = null
-    out = new Array[Long](seq.length)
-    var pack = 0
+    val out: Array[Long] = new Array[Long](seq.length)
+    var pack: Long = 0
     var offset = 0
     for (i <- 0 until 15) {
       var tmp = 0
-      if (offset < seq.length) tmp = packCh(seq.charAt(offset), rev = false)
+      if (offset < seq.length) {
+        tmp = packCh(seq.charAt(offset), rev = false)
+      }
       pack = (pack << 4) | tmp
       offset += 1
     }
