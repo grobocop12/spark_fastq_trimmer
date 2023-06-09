@@ -17,7 +17,6 @@ class PairedEndMode extends TrimmingMode {
 
   override def run(argsMap: Map[String, Any]): Unit = {
     val outputs = createOutputFileNames(argsMap("output").asInstanceOf[String])
-    val trimmers = createTrimmers(argsMap("trimmers").asInstanceOf[List[String]])
     val session = SparkSession
       .builder
       .appName(argsMap.getOrElse("appName", "FastTrimmerSE").asInstanceOf[String])
@@ -25,6 +24,7 @@ class PairedEndMode extends TrimmingMode {
       .getOrCreate()
     val sc = session.sparkContext
     sc.setLogLevel("INFO")
+    val trimmers = createTrimmers(sc, argsMap("trimmers").asInstanceOf[List[String]])
 
     val input1 = sc.textFile(argsMap("input_1").asInstanceOf[String])
       .sliding(4, 4)

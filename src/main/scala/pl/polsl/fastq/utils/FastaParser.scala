@@ -5,8 +5,10 @@ import pl.polsl.fastq.data.FastaRecord
 
 import java.io.{BufferedInputStream, BufferedReader, File, FileInputStream}
 
-class FastaParser(val file: File) {
-  val reader = new BufferedReader(new InputStreamReader(new BufferedInputStream(new FileInputStream(file), 1_000_000)))
+class FastaParser(val file: Array[String]) {
+  //  val reader = new BufferedReader(new InputStreamReader(new BufferedInputStream(file, 1000000)))
+  //  val reader = new BufferedReader(new InputStreamReader(new BufferedInputStream(getClass.getResourceAsStream(file.getName), 1000000)))
+  var lines = file
   var current: Option[FastaRecord] = None
   var currentLine: Option[String] = None
 
@@ -21,19 +23,27 @@ class FastaParser(val file: File) {
   def parseOne(): Unit = {
     current = None
 
-    if (currentLine.isEmpty) currentLine = Option(reader.readLine)
+    if (currentLine.isEmpty && lines.nonEmpty) {
+      currentLine = lines.headOption
+      lines = lines.tail
+    }
 
-    while (current.nonEmpty && !currentLine.get.startsWith(">")) currentLine = Option(reader.readLine)
+    while (current.nonEmpty && !currentLine.get.startsWith(">")) {
+      currentLine = lines.headOption
+      lines = lines.tail
+    }
 
     if (currentLine.nonEmpty && currentLine.get.startsWith(">")) {
       val fullName = currentLine.get.substring(1).trim
       val tokens = fullName.split("[\\| ]")
       val name = tokens(0)
       val builder = new StringBuilder
-      currentLine = Option(reader.readLine)
+      currentLine = lines.headOption
+      lines = lines.tail
       while (currentLine.nonEmpty && !currentLine.get.startsWith(">")) {
         if (!currentLine.get.startsWith(";")) builder.append(currentLine.get.trim)
-        currentLine = Option(reader.readLine)
+        currentLine = lines.headOption
+        lines = if (lines.isEmpty) Array() else lines.tail
       }
       current = Option(new FastaRecord(name, builder.toString.trim, fullName))
     }

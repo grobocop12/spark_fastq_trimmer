@@ -1,12 +1,14 @@
 package pl.polsl.fastq.trimmer
 
+import org.apache.spark.SparkContext
+
 import java.io.File
 
 object TrimmerFactory {
-  def createTrimmers(trimmerNames: List[String]): List[Trimmer] =
-    trimmerNames.map(createTrimmer)
+  def createTrimmers(sc: SparkContext, trimmerNames: List[String]): List[Trimmer] =
+    trimmerNames.map(n => createTrimmer(sc, n))
 
-  private def createTrimmer(str: String): Trimmer = {
+  private def createTrimmer(sc: SparkContext, str: String): Trimmer = {
     val idx = str.indexOf(":")
     val name = if (idx > 0) str.substring(0, idx) else str
     val args = if (idx > 0) str.substring(idx + 1, str.length) else ""
@@ -22,13 +24,14 @@ object TrimmerFactory {
       case "HEADCROP" => new HeadCropTrimmer(args.toInt)
       case "ILLUMINACLIP" =>
         val arg: Array[String] = args.split(":")
-        val seqs: File = new File(arg(0))
-        val seedMaxMiss: Int = arg(1).toInt
-        val minPalindromeLikelihood: Int = arg(2).toInt
-        val minSequenceLikelihood: Int = arg(3).toInt
-        val minPrefix: Int = if (arg.length > 4) arg(4).toInt else 1
-        val palindromeKeepBoth: Boolean = if (arg.length > 5) arg(5).toLowerCase.toBoolean else false
-        IlluminaClippingTrimmer(seqs, seedMaxMiss, minPalindromeLikelihood, minSequenceLikelihood, minPrefix, palindromeKeepBoth)
+        val (source, otherArgs) = parseIlluminaclipSource(arg)
+        val seedMaxMiss: Int = otherArgs(0).toInt
+        val minPalindromeLikelihood: Int = otherArgs(1).toInt
+        val minSequenceLikelihood: Int = otherArgs(2).toInt
+        val minPrefix: Int = if (otherArgs.length > 3) otherArgs(3).toInt else 1
+        val palindromeKeepBoth: Boolean = if (otherArgs.length > 4) otherArgs(4).toLowerCase.toBoolean else false
+        val lines = sc.textFile(source).collect()
+        IlluminaClippingTrimmer(lines, seedMaxMiss, minPalindromeLikelihood, minSequenceLikelihood, minPrefix, palindromeKeepBoth)
       case "LEADING" => new LeadingTrimmer(args.toInt)
       case "MINLEN" => new MinLenTrimmer(args.toInt)
       case "MAXINFO" =>
@@ -43,6 +46,13 @@ object TrimmerFactory {
       case "TOPHRED33" => new ToPhred33Trimmer()
       case "TOPHRED64" => new ToPhred64Trimmer()
       case _ => throw new RuntimeException(s"Unknown trimmer: $name")
+    }
+  }
+
+  private def parseIlluminaclipSource(args: Array[String]): (String, Array[String]) = {
+    args.head match {
+      case "gs" | "s3" => (args.head + ":" + args.tail.head, args.tail.tail)
+      case _ => (args.head, args.tail)
     }
   }
 }
