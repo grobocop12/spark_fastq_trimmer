@@ -33,13 +33,13 @@ class PairedEndMode extends TrimmingMode {
 
     val sample = input1
       .take(PHRED_SAMPLE_SIZE)
-      .map(x => FastqRecord(x(0), x(1), x(2), x(3)))
+      .map(x => FastqRecord(x(0), x(1), x(3)))
 
     val phredOffset: Int = argsMap.getOrElse("phredOffset", PhredDetector(sample))
       .asInstanceOf[Int]
 
-    val records1 = input1.map(x => FastqRecord(x(0), x(1), x(2), x(3), phredOffset))
-    val records2 = input2.map(x => FastqRecord(x(0), x(1), x(2), x(3), phredOffset))
+    val records1 = input1.map(x => FastqRecord(x(0), x(1), x(3), phredOffset))
+    val records2 = input2.map(x => FastqRecord(x(0), x(1), x(3), phredOffset))
     val zipped = records1.zip(records2)
     PairValidator.validatePairs(zipped)
 

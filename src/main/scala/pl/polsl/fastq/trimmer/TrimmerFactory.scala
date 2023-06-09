@@ -2,8 +2,6 @@ package pl.polsl.fastq.trimmer
 
 import org.apache.spark.SparkContext
 
-import java.io.File
-
 object TrimmerFactory {
   def createTrimmers(sc: SparkContext, trimmerNames: List[String]): List[Trimmer] =
     trimmerNames.map(n => createTrimmer(sc, n))

@@ -8,7 +8,6 @@ class HeadCropTrimmer(toTrim: Int) extends SingleTrimmer {
       null
     else FastqRecord(rec.name,
       rec.sequence.substring(toTrim),
-      rec.comment,
       rec.quality.substring(toTrim),
       rec.phredOffset)
   }

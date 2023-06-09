@@ -9,7 +9,6 @@ class CropTrimmer(length: Int) extends SingleTrimmer {
     else
       FastqRecord(rec.name,
         rec.sequence.substring(0, length),
-        rec.comment,
         rec.quality.substring(0, length),
         rec.phredOffset)
   }

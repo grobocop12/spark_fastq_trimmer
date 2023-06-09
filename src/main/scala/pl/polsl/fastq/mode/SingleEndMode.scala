@@ -27,22 +27,22 @@ class SingleEndMode extends TrimmingMode {
     val sc = session.sparkContext
     sc.setLogLevel("INFO")
 
-    val log = LogManager.getRootLogger
     val trimmers = createTrimmers(sc, argsMap("trimmers").asInstanceOf[List[String]])
 
     val fastqLines = sc.textFile(argsMap("input").asInstanceOf[String])
       .sliding(4, 4)
+      .cache()
 
     val sample = fastqLines
       .take(PHRED_SAMPLE_SIZE)
-      .map(x => FastqRecord(x(0), x(1), x(2), x(3)))
+      .map(x => FastqRecord(x(0), x(1), x(3)))
 
     val phredOffset: Int = argsMap.getOrElse("phredOffset", PhredDetector(sample))
       .asInstanceOf[Int]
 
-    val records = fastqLines.map(x => FastqRecord(x(0), x(1), x(2), x(3), phredOffset))
+    val records = fastqLines.map(x => FastqRecord(x(0), x(1), x(3), phredOffset))
 
-    applyTrimmer(log, records, trimmers)
+    applyTrimmer(records, trimmers)
       .saveAsTextFile(tempDirectory)
     //    concatenateFiles(tempDirectory, output)
     //    new Directory(new File(tempDirectory)).deleteRecursively()
@@ -50,14 +50,13 @@ class SingleEndMode extends TrimmingMode {
   }
 
   @tailrec
-  private def applyTrimmer(log: Logger, records: RDD[FastqRecord], trimmers: List[Trimmer]): RDD[FastqRecord] = {
-    log.info("Trimmer applied")
+  private def applyTrimmer(records: RDD[FastqRecord], trimmers: List[Trimmer]): RDD[FastqRecord] = {
     if (trimmers.isEmpty)
       records
     else {
-      applyTrimmer(log,
-        records.map(trimmers.head.processSingle(_))
-          .filter(_ != null),
+      applyTrimmer(records.map(trimmers.head.processSingle(_))
+        .cache()
+        .filter(_ != null),
         trimmers.tail)
     }
   }
