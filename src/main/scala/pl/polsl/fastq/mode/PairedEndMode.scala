@@ -29,86 +29,100 @@ class PairedEndMode extends TrimmingMode {
 
     val input1 = sc.textFile(argsMap("input_1").asInstanceOf[String])
       .sliding(4, 4)
+      .zipWithIndex()
     val input2 = sc.textFile(argsMap("input_2").asInstanceOf[String])
       .sliding(4, 4)
+      .zipWithIndex()
 
     //    session.read.textFile(argsMap("input_1").asInstanceOf[String], argsMap("input_2").asInstanceOf[String])
-    import session.implicits._
-    val i1 = session.createDataset(input1.map {
-      case Array(id, seq, _, qual) => (id, seq, qual)
-    }).toDF("name_1", "sequence_1", "quality_1")
-    val i2 = session.createDataset(input2.map {
-      case Array(id, seq, _, qual) => (id, seq, qual)
-    }).toDF("name_2", "sequence_2", "quality_2")
-    val id1 = i1.withColumn("id", element_at(split(col("name_1"), " "), 1))
-    val id2 = i2.withColumn("id", element_at(split(col("name_2"), " "), 1))
-    val ds = id1.join(id2, Seq("id"))
-    val beggingCount = ds.count()
-
-
+    //    import session.implicits._
+    //    val i1 = session.createDataset(input1.map {
+    //      case (Array(name, seq, _, qual), id) => (id, name, seq, qual)
+    //    }).toDF("id", "name_1", "sequence_1", "quality_1")
+    //    val i2 = session.createDataset(input2.map {
+    //      case (Array(name, seq, _, qual), id) => (id, name, seq, qual)
+    //    }).toDF("id", "name_2", "sequence_2", "quality_2")
+    //    val ds = i1.join(i2, Seq("id"))
+    //    val beggingCount = ds.count()
+    //
+    //
     val sample = input1
       .take(PHRED_SAMPLE_SIZE)
-      .map(x => FastqRecord(x(0), x(1), x(3)))
+      .map(x => FastqRecord(x._1(0), x._1(1), x._1(3)))
     val phredOffset: Int = argsMap.getOrElse("phredOffset", PhredDetector(sample))
       .asInstanceOf[Int]
-    val result = ds.where(col("name_1").isNotNull or col("name_2").isNotNull)
-    val survivingCount = result.count()
-
-    val paired = result
-      .where(col("name_1").isNotNull and col("name_2").isNotNull)
-      .sort(col("id"))
-      .cache()
-
-    val leftPaired = paired.select(concat($"name_1", lit("\n"), $"sequence_1", lit("\n+\n"), $"quality_1"))
-    val rightPaired = paired.select(concat($"name_2", lit("\n"), $"sequence_2", lit("\n+\n"), $"quality_2"))
-    leftPaired
-      .write
-      .format("text")
-      .text("left_paired.fastq")
-
-    rightPaired
-      .write
-      .format("text")
-      .text("right_paired.fastq")
-
-    val unpaired = ds.where(col("name_1").isNull or col("name_2").isNull)
-    unpaired
-      .where(col("name_1").isNotNull)
-      .select(concat($"name_1", lit("\n"), $"sequence_1", lit("\n+\n"), $"quality_1"))
-      .write
-      .format("text")
-      .text("left_unpaired.fastq")
-    unpaired
-      .where(col("name_2").isNotNull)
-      .select(concat($"name_2", lit("\n"), $"sequence_2", lit("\n+\n"), $"quality_2"))
-      .write
-      .format("text")
-      .text("right_unpaired.fastq")
-    val percentageSurviving: Double = survivingCount / beggingCount * 100
-    println("Survived percentage: " + percentageSurviving)
+    //    val result = ds.where(col("name_1").isNotNull or col("name_2").isNotNull)
+    //    val survivingCount = result.count()
     //
-    //
-    //    val records1 = input1.map(x => FastqRecord(x(0), x(1), x(3), phredOffset))
-    //    val records2 = input2.map(x => FastqRecord(x(0), x(1), x(3), phredOffset))
-    //    val zipped = records1.repartition(records2.getNumPartitions).zip(records2)
-    //    PairValidator.validatePairs(zipped)
-    //
-    //    val trimmed = applyTrimmer(zipped, trimmers)
+    //    val paired = result
+    //      .where(col("name_1").isNotNull and col("name_2").isNotNull)
+    //      .sort(col("id"))
     //      .cache()
-    //    trimmed.filter {
-    //      case (_: FastqRecord, null) => true
-    //      case _ => false
-    //    }.saveAsTextFile(getTemporaryDirPath(outputs(0)))
-    //    trimmed.filter {
-    //      case (null, _: FastqRecord) => true
-    //      case _ => false
-    //    }.saveAsTextFile(getTemporaryDirPath(outputs(1)))
-    //    val paired = trimmed.filter {
-    //      case (_: FastqRecord, _: FastqRecord) => true
-    //      case _ => false
-    //    }.cache()
-    //    paired.map(f => f._1).saveAsTextFile(getTemporaryDirPath(outputs(2)))
-    //    paired.map(f => f._2).saveAsTextFile(getTemporaryDirPath(outputs(3)))
+    //
+    //    paired.select(col("id"), col("name_1"), col("name_2")).show(20)
+    //
+    //    val leftPaired = paired.select(concat($"name_1", lit("\n"), $"sequence_1", lit("\n+\n"), $"quality_1"))
+    //    val rightPaired = paired.select(concat($"name_2", lit("\n"), $"sequence_2", lit("\n+\n"), $"quality_2"))
+    //    leftPaired
+    //      .write
+    //      .format("text")
+    //      .text("left_paired.fastq")
+    //
+    //    rightPaired
+    //      .write
+    //      .format("text")
+    //      .text("right_paired.fastq")
+    //
+    //    val unpaired = ds.where(col("name_1").isNull or col("name_2").isNull)
+    //    unpaired
+    //      .where(col("name_1").isNotNull)
+    //      .select(concat($"name_1", lit("\n"), $"sequence_1", lit("\n+\n"), $"quality_1"))
+    //      .write
+    //      .format("text")
+    //      .text("left_unpaired.fastq")
+    //    unpaired
+    //      .where(col("name_2").isNotNull)
+    //      .select(concat($"name_2", lit("\n"), $"sequence_2", lit("\n+\n"), $"quality_2"))
+    //      .write
+    //      .format("text")
+    //      .text("right_unpaired.fastq")
+    //    val percentageSurviving: Double = survivingCount / beggingCount * 100
+    //    println("Survived percentage: " + percentageSurviving)
+    //
+    //
+    val records1 = input1.map(x => (x._2, FastqRecord(x._1(0), x._1(1), x._1(3), phredOffset)))
+    val records2 = input2.map(x => (x._2, FastqRecord(x._1(0), x._1(1), x._1(3), phredOffset)))
+    //    val zipped = records1.repartition(records2.getNumPartitions).zip(records2)
+    val joined = records1.join(records2)
+
+    PairValidator.validatePairs(joined.map(_._2))
+
+    val trimmed = applyTrimmer(joined, trimmers)
+      .cache()
+    trimmed.filter {
+      case (_: Long, (_: FastqRecord, null)) => true
+      case _ => false
+    }.sortBy(_._1)
+      .map(_._2._1)
+      .saveAsTextFile(getTemporaryDirPath(outputs(0)))
+    trimmed.filter {
+      case (_: Long, (null, _: FastqRecord)) => true
+      case _ => false
+    }.sortBy(_._1)
+      .map(_._2._2)
+      .saveAsTextFile(getTemporaryDirPath(outputs(1)))
+    val paired = trimmed.filter {
+      case (_: Long, (_: FastqRecord, _: FastqRecord)) => true
+      case _ => false
+    }.cache()
+    paired
+      .sortBy(_._1)
+      .map(f => f._2._1)
+      .saveAsTextFile(getTemporaryDirPath(outputs(2)))
+    paired
+      .sortBy(_._1)
+      .map(f => f._2._2)
+      .saveAsTextFile(getTemporaryDirPath(outputs(3)))
 
     //    outputs.foreach(o => concatenateFiles(getTemporaryDirPath(o), o))
     //    outputs.foreach(o => new Directory(new File(getTemporaryDirPath(o))).deleteRecursively())
@@ -127,14 +141,14 @@ class PairedEndMode extends TrimmingMode {
   private def getTemporaryDirPath(path: String): String = s"$path-temp"
 
   @tailrec
-  private def applyTrimmer(records: RDD[(FastqRecord, FastqRecord)],
-                           trimmers: List[Trimmer]): RDD[(FastqRecord, FastqRecord)] = {
+  private def applyTrimmer(records: RDD[(Long, (FastqRecord, FastqRecord))],
+                           trimmers: List[Trimmer]): RDD[(Long, (FastqRecord, FastqRecord))] = {
     if (trimmers.isEmpty)
       records
     else {
-      applyTrimmer(records.map(trimmers.head.processPair(_))
+      applyTrimmer(records.map(x => (x._1, trimmers.head.processPair(x._2)))
         .filter {
-          case (null, null) => false
+          case (_, (null, null)) => false
           case _ => true
         }, trimmers.tail)
     }
