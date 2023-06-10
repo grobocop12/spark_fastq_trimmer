@@ -48,7 +48,7 @@ class PairedEndMode extends TrimmingMode {
     //
     val sample = input1
       .take(PHRED_SAMPLE_SIZE)
-      .map(x => FastqRecord(x(0), x(1), x(3)))
+      .map(x => FastqRecord(x._1(0), x._1(1), x._1(3)))
     val phredOffset = argsMap.getOrElse("phredOffset", PhredDetector(sample))
       .asInstanceOf[Int]
     //    val result = ds.where(col("name_1").isNotNull or col("name_2").isNotNull)
@@ -144,14 +144,14 @@ class PairedEndMode extends TrimmingMode {
   private def getTemporaryDirPath(path: String): String = s"$path-temp"
 
   @tailrec
-  private def applyTrimmer(records: RDD[(FastqRecord, FastqRecord)],
-                           trimmers: List[Trimmer]): RDD[(FastqRecord, FastqRecord)] = {
+  private def applyTrimmer(records: RDD[(Long, (FastqRecord, FastqRecord))],
+                           trimmers: List[Trimmer]): RDD[(Long, (FastqRecord, FastqRecord))] = {
     if (trimmers.isEmpty)
       records
     else {
-      applyTrimmer(records.map(trimmers.head.processPair(_))
+      applyTrimmer(records.map(x => (x._1, trimmers.head.processPair(x._2)))
         .filter {
-          case (null, null) => false
+          case (_: Long, (null, null)) => false
           case _ => true
         }, trimmers.tail)
     }
