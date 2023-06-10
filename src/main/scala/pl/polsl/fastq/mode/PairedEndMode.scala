@@ -49,7 +49,7 @@ class PairedEndMode extends TrimmingMode {
     val sample = input1
       .take(PHRED_SAMPLE_SIZE)
       .map(x => FastqRecord(x(0), x(1), x(3)))
-    val phredOffset: Int = argsMap.getOrElse("phredOffset", PhredDetector(sample))
+    val phredOffset = argsMap.getOrElse("phredOffset", PhredDetector(sample))
       .asInstanceOf[Int]
     val result = ds.where(col("name_1").isNotNull or col("name_2").isNotNull)
     val survivingCount = result.count()
@@ -64,12 +64,12 @@ class PairedEndMode extends TrimmingMode {
     leftPaired
       .write
       .format("text")
-      .text("left_paired.fastq")
+      .text(getTemporaryDirPath(outputs(0)))
 
     rightPaired
       .write
       .format("text")
-      .text("right_paired.fastq")
+      .text(getTemporaryDirPath(outputs(1)))
 
     val unpaired = ds.where(col("name_1").isNull or col("name_2").isNull)
     unpaired
@@ -77,13 +77,13 @@ class PairedEndMode extends TrimmingMode {
       .select(concat($"name_1", lit("\n"), $"sequence_1", lit("\n+\n"), $"quality_1"))
       .write
       .format("text")
-      .text("left_unpaired.fastq")
+      .text(outputs(2))
     unpaired
       .where(col("name_2").isNotNull)
       .select(concat($"name_2", lit("\n"), $"sequence_2", lit("\n+\n"), $"quality_2"))
       .write
       .format("text")
-      .text("right_unpaired.fastq")
+      .text(outputs(3))
     val percentageSurviving: Double = survivingCount / beggingCount * 100
     println("Survived percentage: " + percentageSurviving)
     //
@@ -117,11 +117,11 @@ class PairedEndMode extends TrimmingMode {
   }
 
   private def createOutputFileNames(outputDir: String): Array[String] = {
-    val unpairedOutput1 = s"$outputDir/unpaired_out_1.fastq"
-    val unpairedOutput2 = s"$outputDir/unpaired_out_2.fastq"
     val pairedOutput1 = s"$outputDir/paired_out_1.fastq"
     val pairedOutput2 = s"$outputDir/paired_out_2.fastq"
-    Array(unpairedOutput1, unpairedOutput2, pairedOutput1, pairedOutput2)
+    val unpairedOutput1 = s"$outputDir/unpaired_out_1.fastq"
+    val unpairedOutput2 = s"$outputDir/unpaired_out_2.fastq"
+    Array(pairedOutput1, pairedOutput2, unpairedOutput1, unpairedOutput2)
   }
 
   private def getTemporaryDirPath(path: String): String = s"$path-temp"
