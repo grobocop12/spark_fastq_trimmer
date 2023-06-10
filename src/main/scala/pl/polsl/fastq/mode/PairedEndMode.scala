@@ -48,15 +48,18 @@ class PairedEndMode extends TrimmingMode {
     //
     val sample = input1
       .take(PHRED_SAMPLE_SIZE)
-      .map(x => FastqRecord(x._1(0), x._1(1), x._1(3)))
-    val phredOffset: Int = argsMap.getOrElse("phredOffset", PhredDetector(sample))
+      .map(x => FastqRecord(x(0), x(1), x(3)))
+    val phredOffset = argsMap.getOrElse("phredOffset", PhredDetector(sample))
       .asInstanceOf[Int]
     //    val result = ds.where(col("name_1").isNotNull or col("name_2").isNotNull)
     //    val survivingCount = result.count()
     //
-    //    val paired = result
-    //      .where(col("name_1").isNotNull and col("name_2").isNotNull)
-    //      .sort(col("id"))
+    //    val records1 = input1.map(x => FastqRecord(x(0), x(1), x(3), phredOffset))
+    //    val records2 = input2.map(x => FastqRecord(x(0), x(1), x(3), phredOffset))
+    //    val zipped = records1.repartition(records2.getNumPartitions).zip(records2)
+    //    PairValidator.validatePairs(zipped)
+    //
+    //    val trimmed = applyTrimmer(zipped, trimmers)
     //      .cache()
     //
     //    paired.select(col("id"), col("name_1"), col("name_2")).show(20)
@@ -141,14 +144,14 @@ class PairedEndMode extends TrimmingMode {
   private def getTemporaryDirPath(path: String): String = s"$path-temp"
 
   @tailrec
-  private def applyTrimmer(records: RDD[(Long, (FastqRecord, FastqRecord))],
-                           trimmers: List[Trimmer]): RDD[(Long, (FastqRecord, FastqRecord))] = {
+  private def applyTrimmer(records: RDD[(FastqRecord, FastqRecord)],
+                           trimmers: List[Trimmer]): RDD[(FastqRecord, FastqRecord)] = {
     if (trimmers.isEmpty)
       records
     else {
-      applyTrimmer(records.map(x => (x._1, trimmers.head.processPair(x._2)))
+      applyTrimmer(records.map(trimmers.head.processPair(_))
         .filter {
-          case (_, (null, null)) => false
+          case (null, null) => false
           case _ => true
         }, trimmers.tail)
     }
