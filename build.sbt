@@ -1,6 +1,6 @@
 ThisBuild / version := "0.0.1-SNAPSHOT"
 
-ThisBuild / scalaVersion := "2.12.11"
+ThisBuild / scalaVersion := "2.12.12"
 
 packageBin / mainClass := Some("pl.polsl.fastq.Main")
 
