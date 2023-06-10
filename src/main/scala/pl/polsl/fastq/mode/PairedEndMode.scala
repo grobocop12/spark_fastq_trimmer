@@ -2,7 +2,8 @@ package pl.polsl.fastq.mode
 
 import org.apache.spark.mllib.rdd.RDDFunctions.fromRDD
 import org.apache.spark.rdd.RDD
-import org.apache.spark.sql.SparkSession
+import org.apache.spark.sql.{SparkSession, functions}
+import org.apache.spark.sql.functions.{col, element_at, split}
 import pl.polsl.fastq.data.FastqRecord
 import pl.polsl.fastq.trimmer.Trimmer
 import pl.polsl.fastq.trimmer.TrimmerFactory.createTrimmers
@@ -31,6 +32,20 @@ class PairedEndMode extends TrimmingMode {
     val input2 = sc.textFile(argsMap("input_2").asInstanceOf[String])
       .sliding(4, 4)
 
+    //    session.read.textFile(argsMap("input_1").asInstanceOf[String], argsMap("input_2").asInstanceOf[String])
+    import session.implicits._
+    val i1 = session.createDataset(input1.map {
+      case Array(id, seq, _, qual) => (id, seq, qual)
+    }).toDF("name", "sequence", "quality")
+    val i2 = session.createDataset(input2.map {
+      case Array(id, seq, _, qual) => (id, seq, qual)
+    }).toDF("name", "sequence", "quality")
+    val id1 = i1.withColumn("id", element_at(split(col("name"), " "), 1))
+   val id2  = i2.withColumn("id", element_at(split(col("name"), " "), 1))
+    id1.join(id2, Seq("id"))
+      .show(10)
+    //    i2.select("name").show()
+
     val sample = input1
       .take(PHRED_SAMPLE_SIZE)
       .map(x => FastqRecord(x(0), x(1), x(3)))
@@ -40,7 +55,7 @@ class PairedEndMode extends TrimmingMode {
 
     val records1 = input1.map(x => FastqRecord(x(0), x(1), x(3), phredOffset))
     val records2 = input2.map(x => FastqRecord(x(0), x(1), x(3), phredOffset))
-    val zipped = records1.zip(records2)
+    val zipped = records1.repartition(records2.getNumPartitions).zip(records2)
     PairValidator.validatePairs(zipped)
 
     val trimmed = applyTrimmer(zipped, trimmers)
@@ -60,8 +75,8 @@ class PairedEndMode extends TrimmingMode {
     paired.map(f => f._1).saveAsTextFile(getTemporaryDirPath(outputs(2)))
     paired.map(f => f._2).saveAsTextFile(getTemporaryDirPath(outputs(3)))
 
-    outputs.foreach(o => concatenateFiles(getTemporaryDirPath(o), o))
-    outputs.foreach(o => new Directory(new File(getTemporaryDirPath(o))).deleteRecursively())
+    //    outputs.foreach(o => concatenateFiles(getTemporaryDirPath(o), o))
+    //    outputs.foreach(o => new Directory(new File(getTemporaryDirPath(o))).deleteRecursively())
 
     session.close
   }

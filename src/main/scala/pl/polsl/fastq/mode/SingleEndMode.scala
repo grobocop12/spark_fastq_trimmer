@@ -31,7 +31,6 @@ class SingleEndMode extends TrimmingMode {
 
     val fastqLines = sc.textFile(argsMap("input").asInstanceOf[String])
       .sliding(4, 4)
-      .cache()
 
     val sample = fastqLines
       .take(PHRED_SAMPLE_SIZE)
@@ -55,7 +54,6 @@ class SingleEndMode extends TrimmingMode {
       records
     else {
       applyTrimmer(records.map(trimmers.head.processSingle(_))
-        .cache()
         .filter(_ != null),
         trimmers.tail)
     }
