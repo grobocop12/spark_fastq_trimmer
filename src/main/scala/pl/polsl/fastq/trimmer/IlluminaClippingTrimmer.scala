@@ -1,12 +1,10 @@
 package pl.polsl.fastq.trimmer
 
 
-import org.apache.spark.rdd.RDD
 import pl.polsl.fastq.data.{FastaRecord, FastqRecord}
 import pl.polsl.fastq.illumina._
 import pl.polsl.fastq.utils.FastaParser
 
-import java.io.File
 import scala.collection.mutable
 
 
@@ -22,11 +20,6 @@ class IlluminaClippingTrimmer private(var seedMaxMiss: Int = 0,
                                       val commonSeqs: Set[IlluminaClippingSeq]
                                      ) extends Trimmer {
 
-  //  override def apply(in: Array[FastqRecord]): Array[FastqRecord] = in.map(f => processRecords((f, null))._1).filter(_ != null)
-
-  //  override def trimPair(in: RDD[(Option[FastqRecord], Option[FastqRecord])]): RDD[(Option[FastqRecord], Option[FastqRecord])] = ???
-  //  override def apply(in: Array[FastqRecord]): Array[FastqRecord] = processRecords(in)
-  //  override def apply(in: FastqRecord): FastqRecord = ???
   override def processSingle(in: FastqRecord): FastqRecord = processRecords((in, null))._1
 
   override def processPair(in: (FastqRecord, FastqRecord)): (FastqRecord, FastqRecord) = processRecords(in)
@@ -58,8 +51,13 @@ class IlluminaClippingTrimmer private(var seedMaxMiss: Int = 0,
         }
       }
       // Keep the minimum
-      if (toKeepForward != null) if (toKeepForward > 0) forwardRec = FastqRecord(forwardRec.name, forwardRec.sequence.substring(0, toKeepForward), forwardRec.comment, forwardRec.quality.substring(0, toKeepForward), forwardRec.phredOffset)
-      else forwardRec = null
+      if (toKeepForward != null)
+        if (toKeepForward > 0)
+          forwardRec = FastqRecord(forwardRec.name,
+            forwardRec.sequence.substring(0, toKeepForward),
+            forwardRec.quality.substring(0, toKeepForward),
+            forwardRec.phredOffset)
+        else forwardRec = null
     }
     if (reverseRec != null) {
       if (toKeepReverse == null || toKeepReverse > 0) {
@@ -71,7 +69,7 @@ class IlluminaClippingTrimmer private(var seedMaxMiss: Int = 0,
         }
       }
       // Keep the minimum
-      if (toKeepReverse != null) if (toKeepReverse > 0) reverseRec = FastqRecord(reverseRec.name, reverseRec.sequence.substring(0, toKeepReverse), reverseRec.comment, reverseRec.quality.substring(0, toKeepReverse), reverseRec.phredOffset)
+      if (toKeepReverse != null) if (toKeepReverse > 0) reverseRec = FastqRecord(reverseRec.name, reverseRec.sequence.substring(0, toKeepReverse), reverseRec.quality.substring(0, toKeepReverse), reverseRec.phredOffset)
       else reverseRec = null
     }
     (forwardRec, reverseRec)
@@ -96,14 +94,14 @@ object IlluminaClippingTrimmer {
   val BASE_G = 0x8
   val BASE_T = 0x2
 
-  def apply(seqs: File, seedMaxMiss: Int, minPalindromeLikelihood: Int, minSequenceLikelihood: Int, minPrefix: Int, palindromeKeepBoth: Boolean): IlluminaClippingTrimmer = {
+  def apply(seqs: Array[String], seedMaxMiss: Int, minPalindromeLikelihood: Int, minSequenceLikelihood: Int, minPrefix: Int, palindromeKeepBoth: Boolean): IlluminaClippingTrimmer = {
     val minSequenceOverlap = (minSequenceLikelihood / LOG10_4).toInt
     val (prefixPairs, forward, reverse, common) = loadSequences(seqs, seedMaxMiss, minPalindromeLikelihood, minSequenceLikelihood, minPrefix, minSequenceOverlap)
     new IlluminaClippingTrimmer(seedMaxMiss, minPalindromeLikelihood, minSequenceLikelihood, minSequenceOverlap, minPrefix, palindromeKeepBoth,
       prefixPairs, forward, reverse, common)
   }
 
-  def loadSequences(seqs: File, seedMaxMiss: Int, minPalindromeLikelihood: Int, minSequenceLikelihood: Int, minPrefix: Int, minSequenceOverlap: Int): (List[IlluminaPrefixPair], Set[IlluminaClippingSeq], Set[IlluminaClippingSeq], Set[IlluminaClippingSeq]) = {
+  def loadSequences(seqs: Array[String], seedMaxMiss: Int, minPalindromeLikelihood: Int, minSequenceLikelihood: Int, minPrefix: Int, minSequenceOverlap: Int): (List[IlluminaPrefixPair], Set[IlluminaClippingSeq], Set[IlluminaClippingSeq], Set[IlluminaClippingSeq]) = {
     val parser = new FastaParser(seqs)
     parser.parseOne()
     val forwardSeqMap = new mutable.HashMap[String, FastaRecord]
@@ -130,9 +128,8 @@ object IlluminaClippingTrimmer {
       }
       else commonSeqMap.put(name, rec)
     }
-    val prefixSet = new mutable.HashSet[String]()
-    prefixSet.addAll(forwardPrefix)
-    prefixSet.intersect(reversePrefix)
+
+    val prefixSet = forwardPrefix.intersect(reversePrefix)
     val prefixPairs = new mutable.ListBuffer[IlluminaPrefixPair]
     for (prefix <- prefixSet) {
       val forwardName = prefix + SUFFIX_F
@@ -169,36 +166,37 @@ object IlluminaClippingTrimmer {
   }
 
   def packSeqInternal(seq: String, reverse: Boolean): Array[Long] = {
-    var out: Array[Long] = null
     if (!reverse) {
-      out = new Array[Long](seq.length - 15)
+      val out = new Array[Long](seq.length - 15)
       var pack = 0
       for (i <- 0 until seq.length) {
         val tmp = packCh(seq.charAt(i), rev = false)
         pack = (pack << 4) | tmp
         if (i >= 15) out(i - 15) = pack
       }
+      out
     }
     else {
-      out = new Array[Long](seq.length - 15)
+      val out = new Array[Long](seq.length - 15)
       var pack = 0
       for (i <- 0 until seq.length) {
         val tmp = packCh(seq.charAt(i), rev = true)
         pack = (pack >>> 4) | tmp << 60
         if (i >= 15) out(i - 15) = pack
       }
+      out
     }
-    out
   }
 
   def packSeqExternal(seq: String): Array[Long] = {
-    var out: Array[Long] = null
-    out = new Array[Long](seq.length)
-    var pack = 0
+    val out: Array[Long] = new Array[Long](seq.length)
+    var pack: Long = 0
     var offset = 0
     for (i <- 0 until 15) {
       var tmp = 0
-      if (offset < seq.length) tmp = packCh(seq.charAt(offset), rev = false)
+      if (offset < seq.length) {
+        tmp = packCh(seq.charAt(offset), rev = false)
+      }
       pack = (pack << 4) | tmp
       offset += 1
     }

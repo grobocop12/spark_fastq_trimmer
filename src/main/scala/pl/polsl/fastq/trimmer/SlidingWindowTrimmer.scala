@@ -1,6 +1,5 @@
 package pl.polsl.fastq.trimmer
 
-import org.apache.spark.rdd.RDD
 import pl.polsl.fastq.data.FastqRecord
 
 import scala.annotation.tailrec
@@ -8,9 +7,7 @@ import scala.annotation.tailrec
 class SlidingWindowTrimmer(windowLength: Int, requiredQuality: Float) extends SingleTrimmer {
   private val totalRequiredQuality: Float = windowLength * requiredQuality
 
-  //  override def apply(in: Array[FastqRecord]): Array[FastqRecord] = in.map(trim).filter(_ != null)
-
-  override protected def processRecord(rec:FastqRecord): FastqRecord = {
+  override protected def processRecord(rec: FastqRecord): FastqRecord = {
 
     if (rec.sequence.length < windowLength) return null
     val qualitySums = rec.qualityAsInteger().sliding(windowLength).map(_.sum)
@@ -20,7 +17,6 @@ class SlidingWindowTrimmer(windowLength: Int, requiredQuality: Float) extends Si
       val lengthToKeep = calculateLength(qualitySums, windowLength)
       FastqRecord(rec.name,
         rec.sequence.substring(0, lengthToKeep),
-        rec.comment,
         rec.quality.substring(0, lengthToKeep),
         rec.phredOffset)
     }

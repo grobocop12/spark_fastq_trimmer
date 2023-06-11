@@ -1,67 +1,83 @@
 package pl.polsl.fastq.mode
 
 import org.apache.spark.mllib.rdd.RDDFunctions.fromRDD
-import org.apache.spark.rdd.RDD
 import org.apache.spark.sql.SparkSession
 import pl.polsl.fastq.data.FastqRecord
-import pl.polsl.fastq.trimmer.Trimmer
 import pl.polsl.fastq.trimmer.TrimmerFactory.createTrimmers
 import pl.polsl.fastq.utils.{PairValidator, PhredDetector}
-
-import java.io.File
-import scala.annotation.tailrec
-import scala.reflect.io.Directory
 
 class PairedEndMode extends TrimmingMode {
   private val PHRED_SAMPLE_SIZE = 100
 
   override def run(argsMap: Map[String, Any]): Unit = {
     val outputs = createOutputFileNames(argsMap("output").asInstanceOf[String])
-    val trimmers = createTrimmers(argsMap("trimmers").asInstanceOf[List[String]])
     val session = SparkSession
       .builder
-      .appName(argsMap.getOrElse("appName", "FastTrimmerSE").asInstanceOf[String])
+      .appName(argsMap.getOrElse("appName", "FastqTrimmerSE").asInstanceOf[String])
       .master(argsMap.getOrElse("master", "local[*]").asInstanceOf[String])
       .getOrCreate()
     val sc = session.sparkContext
     sc.setLogLevel("INFO")
+    val trimmers = createTrimmers(sc, argsMap("trimmers").asInstanceOf[List[String]])
 
     val input1 = sc.textFile(argsMap("input_1").asInstanceOf[String])
       .sliding(4, 4)
+      .zipWithIndex()
     val input2 = sc.textFile(argsMap("input_2").asInstanceOf[String])
       .sliding(4, 4)
-
+      .zipWithIndex()
     val sample = input1
       .take(PHRED_SAMPLE_SIZE)
-      .map(x => FastqRecord(x(0), x(1), x(2), x(3)))
-
-    val phredOffset: Int = argsMap.getOrElse("phredOffset", PhredDetector(sample))
+      .map(x => FastqRecord(x._1(0), x._1(1), x._1(3)))
+    val phredOffset = argsMap.getOrElse("phredOffset", PhredDetector(sample))
       .asInstanceOf[Int]
+    val records1 = input1.map(x => (x._2, FastqRecord(x._1(0), x._1(1), x._1(3), phredOffset)))
+    val records2 = input2.map(x => (x._2, FastqRecord(x._1(0), x._1(1), x._1(3), phredOffset)))
+    val joined = records1.join(records2)
 
-    val records1 = input1.map(x => FastqRecord(x(0), x(1), x(2), x(3), phredOffset))
-    val records2 = input2.map(x => FastqRecord(x(0), x(1), x(2), x(3), phredOffset))
-    val zipped = records1.zip(records2)
-    PairValidator.validatePairs(zipped)
-
-    val trimmed = applyTrimmer(zipped, trimmers)
+    val trimmed = joined.map(t => {
+      var recs = t._2
+      PairValidator.validatePair(recs._1.name, recs._2.name)
+      for (trimmer <- trimmers) {
+        recs = trimmer.processPair(recs)
+      }
+      (t._1, recs)
+    })
       .cache()
-    trimmed.filter {
-      case (_: FastqRecord, null) => true
-      case _ => false
-    }.saveAsTextFile(getTemporaryDirPath(outputs(0)))
-    trimmed.filter {
-      case (null, _: FastqRecord) => true
-      case _ => false
-    }.saveAsTextFile(getTemporaryDirPath(outputs(1)))
-    val paired = trimmed.filter {
-      case (_: FastqRecord, _: FastqRecord) => true
-      case _ => false
-    }.cache()
-    paired.map(f => f._1).saveAsTextFile(getTemporaryDirPath(outputs(2)))
-    paired.map(f => f._2).saveAsTextFile(getTemporaryDirPath(outputs(3)))
 
-    outputs.foreach(o => concatenateFiles(getTemporaryDirPath(o), o))
-    outputs.foreach(o => new Directory(new File(getTemporaryDirPath(o))).deleteRecursively())
+    trimmed.filter {
+      case (_: Long, (_: FastqRecord, null)) => true
+      case _ => false
+    }
+//      .sortBy(_._1)
+      .map(_._2._1)
+      .saveAsTextFile(getTemporaryDirPath(outputs(0)))
+
+    trimmed.filter {
+      case (_: Long, (null, _: FastqRecord)) => true
+      case _ => false
+    }
+//      .sortBy(_._1)
+      .map(_._2._2)
+      .saveAsTextFile(getTemporaryDirPath(outputs(1)))
+
+    val paired = trimmed.filter {
+      case (_: Long, (_: FastqRecord, _: FastqRecord)) => true
+      case _ => false
+    }
+//      .sortBy(_._1)
+      .cache()
+
+    paired
+      .map(f => f._2._1)
+      .saveAsTextFile(getTemporaryDirPath(outputs(2)))
+
+    paired
+      .map(f => f._2._2)
+      .saveAsTextFile(getTemporaryDirPath(outputs(3)))
+
+    //    outputs.foreach(o => concatenateFiles(getTemporaryDirPath(o), o))
+    //    outputs.foreach(o => new Directory(new File(getTemporaryDirPath(o))).deleteRecursively())
 
     session.close
   }
@@ -75,18 +91,4 @@ class PairedEndMode extends TrimmingMode {
   }
 
   private def getTemporaryDirPath(path: String): String = s"$path-temp"
-
-  @tailrec
-  private def applyTrimmer(records: RDD[(FastqRecord, FastqRecord)],
-                           trimmers: List[Trimmer]): RDD[(FastqRecord, FastqRecord)] = {
-    if (trimmers.isEmpty)
-      records
-    else {
-      applyTrimmer(records.map(trimmers.head.processPair(_))
-        .filter {
-          case (null, null) => false
-          case _ => true
-        }, trimmers.tail)
-    }
-  }
 }

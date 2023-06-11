@@ -15,7 +15,6 @@ class MaximumInformationTrimmer(parLength: Int, strictness: Float) extends Singl
     if (maxScorePosition < quals.length)
       return FastqRecord(rec.name,
         rec.sequence.substring(0, maxScorePosition),
-        rec.comment,
         rec.quality.substring(0, maxScorePosition),
         rec.phredOffset)
     rec

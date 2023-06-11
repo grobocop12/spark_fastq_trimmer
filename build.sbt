@@ -1,6 +1,11 @@
 ThisBuild / version := "0.0.1-SNAPSHOT"
 
-ThisBuild / scalaVersion := "2.13.10"
+ThisBuild / scalaVersion := "2.12.12"
+
+packageBin / mainClass := Some("pl.polsl.fastq.Main")
+
+Compile / resourceDirectory := file(".") / "./src/main/resources"
+Runtime / resourceDirectory := file(".") / "./src/main/resources"
 
 lazy val root = (project in file("."))
   .settings(
