@@ -4,9 +4,6 @@ ThisBuild / scalaVersion := "2.12.12"
 
 packageBin / mainClass := Some("pl.polsl.fastq.Main")
 
-Compile / resourceDirectory := file(".") / "./src/main/resources"
-Runtime / resourceDirectory := file(".") / "./src/main/resources"
-
 lazy val root = (project in file("."))
   .settings(
     name := "spark-fastq-trimmer",

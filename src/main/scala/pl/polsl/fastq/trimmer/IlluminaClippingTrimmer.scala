@@ -168,7 +168,7 @@ object IlluminaClippingTrimmer {
   def packSeqInternal(seq: String, reverse: Boolean): Array[Long] = {
     if (!reverse) {
       val out = new Array[Long](seq.length - 15)
-      var pack = 0
+      var pack = 0L
       for (i <- 0 until seq.length) {
         val tmp = packCh(seq.charAt(i), rev = false)
         pack = (pack << 4) | tmp
@@ -178,7 +178,7 @@ object IlluminaClippingTrimmer {
     }
     else {
       val out = new Array[Long](seq.length - 15)
-      var pack = 0
+      var pack = 0L
       for (i <- 0 until seq.length) {
         val tmp = packCh(seq.charAt(i), rev = true)
         pack = (pack >>> 4) | tmp << 60
@@ -190,10 +190,10 @@ object IlluminaClippingTrimmer {
 
   def packSeqExternal(seq: String): Array[Long] = {
     val out: Array[Long] = new Array[Long](seq.length)
-    var pack: Long = 0
-    var offset = 0
-    for (i <- 0 until 15) {
-      var tmp = 0
+    var pack: Long = 0L
+    var offset: Int = 0
+    for (_ <- 0 until 15) {
+      var tmp: Int = 0
       if (offset < seq.length) {
         tmp = packCh(seq.charAt(offset), rev = false)
       }
@@ -201,7 +201,7 @@ object IlluminaClippingTrimmer {
       offset += 1
     }
     for (i <- 0 until seq.length) {
-      var tmp = 0
+      var tmp: Int = 0
       if (offset < seq.length) tmp = packCh(seq.charAt(offset), rev = false)
       pack = (pack << 4) | tmp
       out(i) = pack
