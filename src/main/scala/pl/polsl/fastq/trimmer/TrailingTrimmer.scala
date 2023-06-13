@@ -11,10 +11,9 @@ class TrailingTrimmer(qual: Int) extends SingleTrimmer {
         rec.sequence.substring(0, length - idx),
         rec.quality.substring(0, length - idx),
         rec.phredOffset)
-    else if (idx == 0)
+    else if (idx == 0 && length > 1)
       rec
     else
       null
   }
-
 }

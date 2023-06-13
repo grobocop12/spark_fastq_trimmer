@@ -43,8 +43,8 @@ class SingleEndMode extends TrimmingMode {
 
     applyTrimmer(records, trimmers)
       .saveAsTextFile(tempDirectory)
-    //    concatenateFiles(tempDirectory, output)
-    //    new Directory(new File(tempDirectory)).deleteRecursively()
+    concatenateFiles(tempDirectory, output)
+    new Directory(new File(tempDirectory)).deleteRecursively()
     session.close
   }
 

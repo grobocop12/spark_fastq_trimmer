@@ -10,7 +10,6 @@ class AvgQualTrimmerTest extends AnyFlatSpec {
     val trimmer = new AvgQualTrimmer(20)
     val record = FastqRecord("READ",
       "GATATTGGCCTGCAGAAGTTCTTCCTGAAAGATGAT",
-      "+",
       "++++++++++**********$KKK************", 33)
 
     val result = trimmer.processSingle(record)
@@ -22,7 +21,6 @@ class AvgQualTrimmerTest extends AnyFlatSpec {
     val trimmer = new AvgQualTrimmer(20)
     val record = FastqRecord("READ",
       "GATATTGGCCTGCAGAAGTTCTTCCTGAAAGATGAT",
-      "+",
       "!!!!!!CCCCCCCCCCCCCCCCCCCCCCCCK!!!!!", 33)
 
     val result = trimmer.processSingle(record)

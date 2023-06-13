@@ -9,7 +9,9 @@ class BaseCountTrimmerTest extends AnyFlatSpec {
   it should "drop sequence" in {
     val trimmer = new BaseCountTrimmer("A", 0, 9)
     val record = FastqRecord("READ",
-      "GATATTGGCCTGCAGAAGTTCTTCCTGAAAGATGAT", "+", "++++++++++**********$KKK************", 33)
+      "GATATTGGCCTGCAGAAGTTCTTCCTGAAAGATGAT",
+      "++++++++++**********$KKK************",
+      33)
 
     val result = trimmer.processSingle(record)
 
@@ -20,7 +22,6 @@ class BaseCountTrimmerTest extends AnyFlatSpec {
     val trimmer = new BaseCountTrimmer("A", 0, 15)
     val record = FastqRecord("READ",
       "GATATTGGCCTGCAGAAGTTCTTCCTGAAAGATGAT",
-      "+",
       "!!!!!!CCCCCCCCCCCCCCCCCCCCCCCCK!!!!!",
       33)
 

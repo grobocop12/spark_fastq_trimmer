@@ -10,7 +10,6 @@ class MaximumInformationTrimmerTest extends AnyFlatSpec {
     val trimmer = new MaximumInformationTrimmer(100, 2)
     val record = FastqRecord("@DRR000001.2 3060N:7:1:1114:186/1",
       "GATATTGGCCTGCAGAAGTTCTTCCTGAAAGATGAT",
-      "+",
       "!!!!!!CCCCCCCCCCCCCCCCCCCCCCCCK!!!!!",
       33)
     val result = trimmer.processSingle(record)
@@ -18,7 +17,6 @@ class MaximumInformationTrimmerTest extends AnyFlatSpec {
     assert(result === FastqRecord(
       "@DRR000001.2 3060N:7:1:1114:186/1",
       "GATATTGGCCTGCAGAAGTTCTTCCTGAAAG",
-      "+",
       "!!!!!!CCCCCCCCCCCCCCCCCCCCCCCCK",
       33))
   }

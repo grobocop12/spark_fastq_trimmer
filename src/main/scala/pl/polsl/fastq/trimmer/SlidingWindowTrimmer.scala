@@ -15,10 +15,17 @@ class SlidingWindowTrimmer(windowLength: Int, requiredQuality: Float) extends Si
       null
     } else {
       val lengthToKeep = calculateLength(qualitySums, windowLength)
-      FastqRecord(rec.name,
-        rec.sequence.substring(0, lengthToKeep),
-        rec.quality.substring(0, lengthToKeep),
-        rec.phredOffset)
+      val i = rec.qualityAsInteger().take(lengthToKeep).lastIndexWhere(_ >= requiredQuality) + 1
+      if (i < 1) {
+        return null
+      }
+      if (i < rec.quality.length) {
+        return FastqRecord(rec.name,
+          rec.sequence.substring(0, i),
+          rec.quality.substring(0, i),
+          rec.phredOffset)
+      }
+      rec
     }
   }
 

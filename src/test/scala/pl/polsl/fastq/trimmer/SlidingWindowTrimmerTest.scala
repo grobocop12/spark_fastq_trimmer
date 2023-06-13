@@ -11,7 +11,6 @@ class SlidingWindowTrimmerTest extends AnyFlatSpec {
     val record = FastqRecord(
       "READ",
       "GATATTGGCCTGCAGAAGTTCTTCCTGAAAGATGAT",
-      "+",
       "++++++++++**************************",
       33)
 
@@ -19,7 +18,6 @@ class SlidingWindowTrimmerTest extends AnyFlatSpec {
 
     assert(result === FastqRecord("READ",
       "GATATTGGCC",
-      "+",
       "++++++++++",
       33))
   }
@@ -29,7 +27,6 @@ class SlidingWindowTrimmerTest extends AnyFlatSpec {
     val record = FastqRecord(
       "READ",
       "GATATTGG",
-      "+",
       "++++++++",
       33)
 
@@ -43,7 +40,6 @@ class SlidingWindowTrimmerTest extends AnyFlatSpec {
     val record = FastqRecord(
       "READ",
       "GATATTGGCCTGCAGAAGTTCTTCCTGAAAGATGAT",
-      "+",
       "!+++++++++**************************",
       33)
 

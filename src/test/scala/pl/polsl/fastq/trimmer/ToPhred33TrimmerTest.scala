@@ -8,19 +8,19 @@ class ToPhred33TrimmerTest extends AnyFlatSpec {
 
   it should "convert quals to phred33" in {
     val trimmer = new ToPhred33Trimmer()
-    val record = FastqRecord("READ", "ATCGA", "+", "@KVaj", 64)
+    val record = FastqRecord("READ", "ATCGA", "@KVaj", 64)
 
     val result = trimmer.processSingle(record)
 
-    assert(result === FastqRecord("READ", "ATCGA", "+", "!,7BK", 33))
+    assert(result === FastqRecord("READ", "ATCGA", "!,7BK", 33))
   }
 
   it should "ignore convertion" in {
     val trimmer = new ToPhred33Trimmer()
-    val record = FastqRecord("READ", "ATCGA", "+", "!,7BK", 33)
+    val record = FastqRecord("READ", "ATCGA",  "!,7BK", 33)
 
     val result = trimmer.processSingle(record)
 
-    assert(result === FastqRecord("READ", "ATCGA", "+", "!,7BK", 33))
+    assert(result === FastqRecord("READ", "ATCGA", "!,7BK", 33))
   }
 }
