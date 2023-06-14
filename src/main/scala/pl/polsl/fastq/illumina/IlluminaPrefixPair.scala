@@ -82,8 +82,8 @@ case class IlluminaPrefixPair(prefix1: String, prefix2: String, seedMaxMiss: Int
       val qual2 = if (offset2 < prefixLength) 100
       else quals2(offset2 - prefixLength)
       if (ch1 == 'N' || ch2 == 'N') likelihood(i) = 0
-      else if (ch1 != ch2) if (qual1 < qual2) likelihood(i) = -qual1 / 10f
-      else likelihood(i) = -qual2 / 10f
+      else if (ch1 != ch2) if (qual1 < qual2) likelihood(i) = -qual1 / 10
+      else likelihood(i) = -qual2 / 10
       else likelihood(i) = LOG10_4
     }
     calculateTotal(likelihood)

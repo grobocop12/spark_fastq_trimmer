@@ -69,7 +69,12 @@ class IlluminaClippingTrimmer private(var seedMaxMiss: Int = 0,
         }
       }
       // Keep the minimum
-      if (toKeepReverse != null) if (toKeepReverse > 0) reverseRec = FastqRecord(reverseRec.name, reverseRec.sequence.substring(0, toKeepReverse), reverseRec.quality.substring(0, toKeepReverse), reverseRec.phredOffset)
+      if (toKeepReverse != null)
+        if (toKeepReverse > 0)
+          reverseRec = FastqRecord(reverseRec.name,
+            reverseRec.sequence.substring(0, toKeepReverse),
+            reverseRec.quality.substring(0, toKeepReverse),
+            reverseRec.phredOffset)
       else reverseRec = null
     }
     (forwardRec, reverseRec)
@@ -136,7 +141,7 @@ object IlluminaClippingTrimmer {
       val reverseName = prefix + SUFFIX_R
       val forwardRec = forwardSeqMap.remove(forwardName).get
       val reverseRec = reverseSeqMap.remove(reverseName).get
-      prefixPairs += new IlluminaPrefixPair(forwardRec.sequence, reverseRec.sequence, seedMaxMiss, minPalindromeLikelihood, minSequenceLikelihood, minPrefix)
+      prefixPairs += IlluminaPrefixPair(forwardRec.sequence, reverseRec.sequence, seedMaxMiss, minPalindromeLikelihood, minSequenceLikelihood, minPrefix)
     }
     val forwardSeqs = mapClippingSet(forwardSeqMap, seedMaxMiss, minSequenceOverlap, minSequenceLikelihood)
     val reverseSeqs = mapClippingSet(reverseSeqMap, seedMaxMiss, minSequenceOverlap, minSequenceLikelihood)
@@ -168,7 +173,7 @@ object IlluminaClippingTrimmer {
   def packSeqInternal(seq: String, reverse: Boolean): Array[Long] = {
     if (!reverse) {
       val out = new Array[Long](seq.length - 15)
-      var pack = 0L
+      var pack: Long = 0L
       for (i <- 0 until seq.length) {
         val tmp = packCh(seq.charAt(i), rev = false)
         pack = (pack << 4) | tmp
@@ -178,9 +183,9 @@ object IlluminaClippingTrimmer {
     }
     else {
       val out = new Array[Long](seq.length - 15)
-      var pack = 0L
+      var pack: Long = 0L
       for (i <- 0 until seq.length) {
-        val tmp = packCh(seq.charAt(i), rev = true)
+        val tmp: Long = packCh(seq.charAt(i), rev = true)
         pack = (pack >>> 4) | tmp << 60
         if (i >= 15) out(i - 15) = pack
       }
