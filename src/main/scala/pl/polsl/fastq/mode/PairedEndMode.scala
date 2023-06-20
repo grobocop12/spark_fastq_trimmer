@@ -6,6 +6,9 @@ import pl.polsl.fastq.data.FastqRecord
 import pl.polsl.fastq.trimmer.TrimmerFactory.createTrimmers
 import pl.polsl.fastq.utils.{PairValidator, PhredDetector}
 
+import java.io.File
+import scala.reflect.io.Directory
+
 class PairedEndMode extends TrimmingMode {
   private val PHRED_SAMPLE_SIZE = 100
 
@@ -49,7 +52,7 @@ class PairedEndMode extends TrimmingMode {
       case (_: Long, (_: FastqRecord, null)) => true
       case _ => false
     }
-//      .sortBy(_._1)
+      .sortBy(_._1)
       .map(_._2._1)
       .saveAsTextFile(getTemporaryDirPath(outputs(0)))
 
@@ -57,7 +60,7 @@ class PairedEndMode extends TrimmingMode {
       case (_: Long, (null, _: FastqRecord)) => true
       case _ => false
     }
-//      .sortBy(_._1)
+      .sortBy(_._1)
       .map(_._2._2)
       .saveAsTextFile(getTemporaryDirPath(outputs(1)))
 
@@ -65,7 +68,7 @@ class PairedEndMode extends TrimmingMode {
       case (_: Long, (_: FastqRecord, _: FastqRecord)) => true
       case _ => false
     }
-//      .sortBy(_._1)
+      .sortBy(_._1)
       .cache()
 
     paired
