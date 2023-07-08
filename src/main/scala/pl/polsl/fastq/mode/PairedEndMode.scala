@@ -26,11 +26,13 @@ class PairedEndMode extends TrimmingMode {
     val input2 = sc.textFile(argsMap("input_2").asInstanceOf[String], input1.getNumPartitions)
       .sliding(4, 4)
       .zipWithIndex()
+
     val sample = input1
       .take(PHRED_SAMPLE_SIZE)
       .map(x => FastqRecord(x._1(0), x._1(1), x._1(3)))
     val phredOffset = argsMap.getOrElse("phredOffset", PhredDetector(sample))
       .asInstanceOf[Int]
+
     val records1 = input1.map(x => (x._2, FastqRecord(x._1(0), x._1(1), x._1(3), phredOffset)))
     val records2 = input2.map(x => (x._2, FastqRecord(x._1(0), x._1(1), x._1(3), phredOffset)))
     val joined = records1.join(records2)
