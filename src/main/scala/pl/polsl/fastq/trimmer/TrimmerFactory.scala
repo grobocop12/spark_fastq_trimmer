@@ -49,7 +49,7 @@ object TrimmerFactory {
 
   private def parseIlluminaclipSource(args: Array[String]): (String, Array[String]) = {
     args.head match {
-      case "gs" | "s3" => (args.head + ":" + args.tail.head, args.tail.tail)
+      case "gs" | "s3" | "wasbs" => (args.head + ":" + args.tail.head, args.tail.tail)
       case _ => (args.head, args.tail)
     }
   }

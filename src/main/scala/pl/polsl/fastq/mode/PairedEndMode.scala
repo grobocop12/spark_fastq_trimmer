@@ -2,12 +2,10 @@ package pl.polsl.fastq.mode
 
 import org.apache.spark.mllib.rdd.RDDFunctions.fromRDD
 import org.apache.spark.sql.SparkSession
+import org.apache.spark.storage.StorageLevel
 import pl.polsl.fastq.data.FastqRecord
 import pl.polsl.fastq.trimmer.TrimmerFactory.createTrimmers
 import pl.polsl.fastq.utils.{PairValidator, PhredDetector}
-
-import java.io.File
-import scala.reflect.io.Directory
 
 class PairedEndMode extends TrimmingMode {
   private val PHRED_SAMPLE_SIZE = 100
@@ -16,8 +14,7 @@ class PairedEndMode extends TrimmingMode {
     val outputs = createOutputFileNames(argsMap("output").asInstanceOf[String])
     val session = SparkSession
       .builder
-      .appName(argsMap.getOrElse("appName", "FastqTrimmerSE").asInstanceOf[String])
-      .master(argsMap.getOrElse("master", "local[*]").asInstanceOf[String])
+      .appName(argsMap.getOrElse("appName", "FastqTrimmerPE").asInstanceOf[String])
       .getOrCreate()
     val sc = session.sparkContext
     sc.setLogLevel("INFO")
@@ -26,7 +23,7 @@ class PairedEndMode extends TrimmingMode {
     val input1 = sc.textFile(argsMap("input_1").asInstanceOf[String])
       .sliding(4, 4)
       .zipWithIndex()
-    val input2 = sc.textFile(argsMap("input_2").asInstanceOf[String])
+    val input2 = sc.textFile(argsMap("input_2").asInstanceOf[String], input1.getNumPartitions)
       .sliding(4, 4)
       .zipWithIndex()
     val sample = input1
@@ -46,41 +43,45 @@ class PairedEndMode extends TrimmingMode {
       }
       (t._1, recs)
     })
-      .cache()
+      .filter {
+        case (_: Long, (null, null)) => false
+        case _ => true
+      }
+      .sortByKey()
+      .map(_._2)
+      .persist(StorageLevel.MEMORY_AND_DISK)
 
     trimmed.filter {
-      case (_: Long, (_: FastqRecord, null)) => true
+      case (_: FastqRecord, null) => true
       case _ => false
     }
-      .sortBy(_._1)
-      .map(_._2._1)
-      .saveAsTextFile(getTemporaryDirPath(outputs(0)))
+      .map(_._1)
+      .coalesce(1)
+      .saveAsTextFile(outputs(0))
 
     trimmed.filter {
-      case (_: Long, (null, _: FastqRecord)) => true
+      case (null, _: FastqRecord) => true
       case _ => false
     }
-      .sortBy(_._1)
-      .map(_._2._2)
-      .saveAsTextFile(getTemporaryDirPath(outputs(1)))
+      .map(_._2)
+      .coalesce(1)
+      .saveAsTextFile(outputs(1))
 
     val paired = trimmed.filter {
-      case (_: Long, (_: FastqRecord, _: FastqRecord)) => true
+      case (_: FastqRecord, _: FastqRecord) => true
       case _ => false
     }
-      .sortBy(_._1)
-      .cache()
+      .persist(StorageLevel.MEMORY_AND_DISK)
 
     paired
-      .map(f => f._2._1)
-      .saveAsTextFile(getTemporaryDirPath(outputs(2)))
+      .map(f => f._1)
+      .coalesce(1)
+      .saveAsTextFile(outputs(2))
 
     paired
-      .map(f => f._2._2)
-      .saveAsTextFile(getTemporaryDirPath(outputs(3)))
-
-    //    outputs.foreach(o => concatenateFiles(getTemporaryDirPath(o), o))
-    //    outputs.foreach(o => new Directory(new File(getTemporaryDirPath(o))).deleteRecursively())
+      .map(f => f._2)
+      .coalesce(1)
+      .saveAsTextFile(outputs(3))
 
     session.close
   }
@@ -93,5 +94,5 @@ class PairedEndMode extends TrimmingMode {
     Array(unpairedOutput1, unpairedOutput2, pairedOutput1, pairedOutput2)
   }
 
-  private def getTemporaryDirPath(path: String): String = s"$path-temp"
+//  private def getTemporaryDirPath(path: String): String = s"$path-temp"
 }

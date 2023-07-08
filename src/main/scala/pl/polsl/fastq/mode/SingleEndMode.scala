@@ -1,6 +1,5 @@
 package pl.polsl.fastq.mode
 
-import org.apache.log4j.{LogManager, Logger}
 import org.apache.spark.mllib.rdd.RDDFunctions.fromRDD
 import org.apache.spark.rdd.RDD
 import org.apache.spark.sql.SparkSession
@@ -9,9 +8,7 @@ import pl.polsl.fastq.trimmer.Trimmer
 import pl.polsl.fastq.trimmer.TrimmerFactory.createTrimmers
 import pl.polsl.fastq.utils.PhredDetector
 
-import java.io._
 import scala.annotation.tailrec
-import scala.reflect.io.Directory
 
 class SingleEndMode extends TrimmingMode {
   private val PHRED_SAMPLE_SIZE = 100
@@ -22,7 +19,6 @@ class SingleEndMode extends TrimmingMode {
     val session = SparkSession
       .builder
       .appName(argsMap.getOrElse("appName", "FastTrimmerSE").asInstanceOf[String])
-      .master(argsMap.getOrElse("master", "local[*]").asInstanceOf[String])
       .getOrCreate()
     val sc = session.sparkContext
     sc.setLogLevel("INFO")
@@ -42,10 +38,8 @@ class SingleEndMode extends TrimmingMode {
     val records = fastqLines.map(x => FastqRecord(x(0), x(1), x(3), phredOffset))
 
     applyTrimmer(records, trimmers)
+      .coalesce(1)
       .saveAsTextFile(tempDirectory)
-    concatenateFiles(tempDirectory, output)
-    new Directory(new File(tempDirectory)).deleteRecursively()
-    session.close
   }
 
   @tailrec
