@@ -16,7 +16,7 @@ object Main extends App {
       case _ => throw new RuntimeException("Unknown mode.")
     }
     mode.run(argsMap)
-    println("Milliseconds passed: " + (new Date().getTime - time))
+    println("Seconds passed: " + ((new Date().getTime - time) / 1000L))
   }
 
   try {

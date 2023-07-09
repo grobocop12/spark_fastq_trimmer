@@ -1,9 +1,8 @@
 package pl.polsl.fastq.mode
 
-import org.apache.spark.{SparkConf, SparkContext}
 import org.apache.spark.mllib.rdd.RDDFunctions.fromRDD
 import org.apache.spark.rdd.RDD
-import org.apache.spark.sql.SparkSession
+import org.apache.spark.{SparkConf, SparkContext}
 import pl.polsl.fastq.data.FastqRecord
 import pl.polsl.fastq.trimmer.Trimmer
 import pl.polsl.fastq.trimmer.TrimmerFactory.createTrimmers
