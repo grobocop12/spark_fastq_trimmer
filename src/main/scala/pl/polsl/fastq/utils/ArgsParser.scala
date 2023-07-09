@@ -24,6 +24,9 @@ object ArgsParser {
       case "-phred64" =>
         builder += ("phredOffset" -> 64)
         parseOne(args.head, args.tail, builder)
+      case "-validate" | "-v" =>
+        builder += ("validate_pairs" -> true)
+        parseOne(args.head, args.tail, builder)
       case "-i" | "--in" =>
         builder += ("input" -> args.head)
         parseOne(args.tail.head, args.tail.tail, builder)

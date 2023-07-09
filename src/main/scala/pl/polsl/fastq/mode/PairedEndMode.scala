@@ -14,11 +14,14 @@ class PairedEndMode extends TrimmingMode {
     val outputs = createOutputFileNames(argsMap("output").asInstanceOf[String])
     val session = SparkSession
       .builder
+      .master("local[*]")
       .appName(argsMap.getOrElse("appName", "FastqTrimmerPE").asInstanceOf[String])
       .getOrCreate()
     val sc = session.sparkContext
     sc.setLogLevel("INFO")
     val trimmers = createTrimmers(sc, argsMap("trimmers").asInstanceOf[List[String]])
+    val validatedPairs = argsMap.getOrElse("validate_pairs", false)
+      .asInstanceOf[Boolean]
 
     val input1 = sc.textFile(argsMap("input_1").asInstanceOf[String])
       .sliding(4, 4)
@@ -39,7 +42,7 @@ class PairedEndMode extends TrimmingMode {
 
     val trimmed = joined.map(t => {
       var recs = t._2
-      PairValidator.validatePair(recs._1.name, recs._2.name)
+      if (validatedPairs) PairValidator.validatePair(recs._1.name, recs._2.name)
       for (trimmer <- trimmers) {
         recs = trimmer.processPair(recs)
       }
