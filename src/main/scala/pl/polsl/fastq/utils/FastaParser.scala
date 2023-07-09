@@ -1,16 +1,11 @@
 package pl.polsl.fastq.utils
 
-import org.apache.hadoop.shaded.org.jline.utils.InputStreamReader
 import pl.polsl.fastq.data.FastaRecord
 
-import java.io.{BufferedInputStream, BufferedReader, File, FileInputStream}
-
 class FastaParser(val file: Array[String]) {
-  //  val reader = new BufferedReader(new InputStreamReader(new BufferedInputStream(file, 1000000)))
-  //  val reader = new BufferedReader(new InputStreamReader(new BufferedInputStream(getClass.getResourceAsStream(file.getName), 1000000)))
-  var lines = file
-  var current: Option[FastaRecord] = None
-  var currentLine: Option[String] = None
+  var lines: Array[String] = file
+  private var current: Option[FastaRecord] = None
+  private var currentLine: Option[String] = None
 
   def hasNext: Boolean = current.nonEmpty
 
