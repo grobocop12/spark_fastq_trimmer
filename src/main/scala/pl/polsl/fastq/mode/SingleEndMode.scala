@@ -10,7 +10,7 @@ import pl.polsl.fastq.utils.PhredDetector
 
 import scala.annotation.tailrec
 
-class SingleEndMode extends TrimmingMode {
+class SingleEndMode extends Mode {
   private val PHRED_SAMPLE_SIZE = 100
 
   override def run(argsMap: Map[String, Any]): Unit = {

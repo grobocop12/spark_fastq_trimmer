@@ -7,7 +7,7 @@ import pl.polsl.fastq.data.FastqRecord
 import pl.polsl.fastq.trimmer.TrimmerFactory.createTrimmers
 import pl.polsl.fastq.utils.{PairValidator, PhredDetector}
 
-class PairedEndMode extends TrimmingMode {
+class PairedEndMode extends Mode {
   private val PHRED_SAMPLE_SIZE = 100
 
   override def run(argsMap: Map[String, Any]): Unit = {
