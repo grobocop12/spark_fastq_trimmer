@@ -95,6 +95,4 @@ class PairedEndMode extends TrimmingMode {
     val pairedOutput2 = s"$outputDir/paired_out_2.fastq"
     Array(unpairedOutput1, unpairedOutput2, pairedOutput1, pairedOutput2)
   }
-
-//  private def getTemporaryDirPath(path: String): String = s"$path-temp"
 }
