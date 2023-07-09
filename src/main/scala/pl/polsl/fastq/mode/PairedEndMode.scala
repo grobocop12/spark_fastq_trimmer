@@ -1,8 +1,8 @@
 package pl.polsl.fastq.mode
 
 import org.apache.spark.mllib.rdd.RDDFunctions.fromRDD
-import org.apache.spark.sql.SparkSession
 import org.apache.spark.storage.StorageLevel
+import org.apache.spark.{SparkConf, SparkContext}
 import pl.polsl.fastq.data.FastqRecord
 import pl.polsl.fastq.trimmer.TrimmerFactory.createTrimmers
 import pl.polsl.fastq.utils.{PairValidator, PhredDetector}
@@ -12,14 +12,15 @@ class PairedEndMode extends Mode {
 
   override def run(argsMap: Map[String, Any]): Unit = {
     val outputs = createOutputFileNames(argsMap("output").asInstanceOf[String])
-    val session = SparkSession
-      .builder
-      .master("local[*]")
-      .appName(argsMap.getOrElse("appName", "FastqTrimmerPE").asInstanceOf[String])
-      .getOrCreate()
-    val sc = session.sparkContext
+    val conf = new SparkConf()
+    conf.setAppName("FastqTrimmerPE")
+    if (argsMap.contains("master")) {
+      conf.setMaster(argsMap("master").asInstanceOf[String])
+    }
+    val sc = new SparkContext(conf)
     sc.setLogLevel("INFO")
     val trimmers = createTrimmers(sc, argsMap("trimmers").asInstanceOf[List[String]])
+
     val validatedPairs = argsMap.getOrElse("validate_pairs", false)
       .asInstanceOf[Boolean]
 
@@ -87,8 +88,6 @@ class PairedEndMode extends Mode {
       .map(f => f._2)
       .coalesce(1)
       .saveAsTextFile(outputs(3))
-
-    session.close
   }
 
   private def createOutputFileNames(outputDir: String): Array[String] = {

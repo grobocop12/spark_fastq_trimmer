@@ -1,5 +1,6 @@
 package pl.polsl.fastq.mode
 
+import org.apache.spark.{SparkConf, SparkContext}
 import org.apache.spark.mllib.rdd.RDDFunctions.fromRDD
 import org.apache.spark.rdd.RDD
 import org.apache.spark.sql.SparkSession
@@ -16,11 +17,13 @@ class SingleEndMode extends Mode {
   override def run(argsMap: Map[String, Any]): Unit = {
     val output = argsMap("output").asInstanceOf[String]
     val tempDirectory = s"$output-temp"
-    val session = SparkSession
-      .builder
-      .appName(argsMap.getOrElse("appName", "FastTrimmerSE").asInstanceOf[String])
-      .getOrCreate()
-    val sc = session.sparkContext
+    val conf = new SparkConf()
+    conf.setAppName("FastqTrimmerSE")
+    if (argsMap.contains("master")) {
+      conf.setMaster(argsMap("master").asInstanceOf[String])
+    }
+
+    val sc = new SparkContext(conf)
     sc.setLogLevel("INFO")
 
     val trimmers = createTrimmers(sc, argsMap("trimmers").asInstanceOf[List[String]])

@@ -15,6 +15,9 @@ object ArgsParser {
                        args: Array[String],
                        builder: mutable.Builder[(String, Any), Map[String, Any]]): Map[String, Any] = {
     currentArg match {
+      case "-master" =>
+        builder += ("master" -> args.head)
+        parseOne(args.tail.head, args.tail.tail, builder)
       case "-m" | "--mode" =>
         builder += ("mode" -> args.head)
         parseOne(args.tail.head, args.tail.tail, builder)
