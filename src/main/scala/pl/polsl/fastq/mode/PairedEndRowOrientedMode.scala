@@ -1,13 +1,12 @@
 package pl.polsl.fastq.mode
 
-import org.apache.spark.mllib.rdd.RDDFunctions.fromRDD
 import org.apache.spark.storage.StorageLevel
 import org.apache.spark.{SparkConf, SparkContext}
 import pl.polsl.fastq.data.FastqRecord
 import pl.polsl.fastq.trimmer.TrimmerFactory.createTrimmers
 import pl.polsl.fastq.utils.{PairValidator, PhredDetector}
 
-class PairedEndMode extends Mode {
+class PairedEndRowOrientedMode extends Mode {
   private val PHRED_SAMPLE_SIZE = 100
 
   override def run(argsMap: Map[String, Any]): Unit = {
@@ -24,33 +23,29 @@ class PairedEndMode extends Mode {
     val validatedPairs = argsMap.getOrElse("validate_pairs", false)
       .asInstanceOf[Boolean]
 
-    val input1 = sc.textFile(argsMap("input_1").asInstanceOf[String])
-      .sliding(4, 4)
-      .zipWithIndex()
-    val input2 = sc.textFile(argsMap("input_2").asInstanceOf[String], input1.getNumPartitions)
-      .sliding(4, 4)
-      .zipWithIndex()
+    val input = sc.textFile(argsMap("input").asInstanceOf[String])
+      .map(_.split("\\|"))
 
-    val sample = input1
+    val sample = input
       .take(PHRED_SAMPLE_SIZE)
-      .map(x => FastqRecord(x._1(0), x._1(1), x._1(3)))
+      .map(row => FastqRecord(row(0), row(1), row(3)))
     val phredOffset = argsMap.getOrElse("phredOffset", PhredDetector(sample))
       .asInstanceOf[Int]
 
-    val records1 = input1.map(x => (x._2, FastqRecord(x._1(0), x._1(1), x._1(3), phredOffset)))
-    val records2 = input2.map(x => (x._2, FastqRecord(x._1(0), x._1(1), x._1(3), phredOffset)))
-    val joined = records1.join(records2)
-
-    val trimmed = joined.map(t => {
-      var recs = t._2
-      if (validatedPairs) PairValidator.validatePair(recs._1.name, recs._2.name)
-      for (trimmer <- trimmers) {
-        recs = trimmer.processPair(recs)
+    val trimmed = input
+      .map { row =>
+        val rec1 = FastqRecord(row(0), row(1), row(3), phredOffset)
+        val rec2 = FastqRecord(row(4), row(5), row(7), phredOffset)
+        (rec1, rec2)
       }
-      (t._1, recs)
-    })
-      .sortByKey()
-      .map(_._2)
+      .map(t => {
+        var recs = t
+        if (validatedPairs) PairValidator.validatePair(recs._1.name, recs._2.name)
+        for (trimmer <- trimmers) {
+          recs = trimmer.processPair(recs)
+        }
+        recs
+      })
       .filter {
         case (null, null) => false
         case _ => true

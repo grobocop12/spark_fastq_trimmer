@@ -1,6 +1,6 @@
 package pl.polsl.fastq
 
-import pl.polsl.fastq.mode.{HelpMode, PairedEndMode, SingleEndMode}
+import pl.polsl.fastq.mode.{HelpMode, PairedEndMode, PairedEndRowOrientedMode, SingleEndMode}
 import pl.polsl.fastq.utils.{ArgsParser, UsagePrinter}
 
 import java.util.Date
@@ -12,6 +12,7 @@ object Main extends App {
     val mode = argsMap("mode") match {
       case "SE" => new SingleEndMode()
       case "PE" => new PairedEndMode()
+      case "PERO" => new PairedEndRowOrientedMode()
       case "help" => new HelpMode()
       case _ => throw new RuntimeException("Unknown mode.")
     }
