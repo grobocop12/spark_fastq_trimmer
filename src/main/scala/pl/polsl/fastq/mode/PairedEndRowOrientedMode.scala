@@ -52,14 +52,21 @@ class PairedEndRowOrientedMode extends Mode {
       }
       .persist(StorageLevel.MEMORY_AND_DISK)
 
-    trimmed.filter {
+    val unpaired = trimmed.filter {
+      case (_: FastqRecord, null) => true
+      case (null, _: FastqRecord) => true
+      case _ => false
+    }
+      .persist(StorageLevel.MEMORY_AND_DISK)
+
+    unpaired.filter {
       case (_: FastqRecord, null) => true
       case _ => false
     }
       .map(_._1)
       .saveAsTextFile(outputs(0))
 
-    trimmed.filter {
+    unpaired.filter {
       case (null, _: FastqRecord) => true
       case _ => false
     }
