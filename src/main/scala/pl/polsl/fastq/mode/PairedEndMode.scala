@@ -49,32 +49,40 @@ class PairedEndMode extends Mode {
       }
       (t._1, recs)
     })
-      .sortByKey()
-      .map(_._2)
       .filter {
-        case (null, null) => false
+        case (_: Long, (null, null)) => false
         case _ => true
       }
       .persist(StorageLevel.MEMORY_AND_DISK)
 
-    trimmed.filter {
-      case (_: FastqRecord, null) => true
+    val unpaired = trimmed.filter {
+      case (_: Long, (_: FastqRecord, null)) => true
+      case (_: Long, (null, _: FastqRecord)) => true
       case _ => false
     }
-      .map(_._1)
+
+    unpaired.filter {
+      case (_: Long, (_: FastqRecord, null)) => true
+      case _ => false
+    }
+      .sortByKey()
+      .map(_._2._1)
       .saveAsTextFile(outputs(0))
 
-    trimmed.filter {
-      case (null, _: FastqRecord) => true
+    unpaired.filter {
+      case (_: Long, (null, _: FastqRecord)) => true
       case _ => false
     }
-      .map(_._2)
+      .sortByKey()
+      .map(_._2._2)
       .saveAsTextFile(outputs(1))
 
     val paired = trimmed.filter {
-      case (_: FastqRecord, _: FastqRecord) => true
+      case (_: Long, (_: FastqRecord, _: FastqRecord)) => true
       case _ => false
     }
+      .sortByKey()
+      .map(_._2)
       .persist(StorageLevel.MEMORY_AND_DISK)
 
     paired
