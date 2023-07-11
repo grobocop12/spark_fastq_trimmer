@@ -12,7 +12,7 @@ class PairedEndRowOrientedMode extends Mode {
   override def run(argsMap: Map[String, Any]): Unit = {
     val outputs = createOutputFileNames(argsMap("output").asInstanceOf[String])
     val conf = new SparkConf()
-    conf.setAppName("FastqTrimmerPE")
+    conf.setAppName("FastqTrimmerPERO")
     if (argsMap.contains("master")) {
       conf.setMaster(argsMap("master").asInstanceOf[String])
     }
