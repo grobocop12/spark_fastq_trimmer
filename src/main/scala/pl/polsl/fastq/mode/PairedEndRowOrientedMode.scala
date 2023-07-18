@@ -10,6 +10,7 @@ class PairedEndRowOrientedMode extends Mode {
   private val PHRED_SAMPLE_SIZE = 100
 
   override def run(argsMap: Map[String, Any]): Unit = {
+    val input = argsMap("input").asInstanceOf[String]
     val outputs = createOutputFileNames(argsMap("output").asInstanceOf[String])
     val conf = new SparkConf()
     conf.setAppName("FastqTrimmerPERO")
@@ -23,16 +24,16 @@ class PairedEndRowOrientedMode extends Mode {
     val validatedPairs = argsMap.getOrElse("validate_pairs", false)
       .asInstanceOf[Boolean]
 
-    val input = sc.textFile(argsMap("input").asInstanceOf[String])
+    val lines = sc.textFile(input)
       .map(_.split("\\|"))
 
-    val sample = input
+    val sample = lines
       .take(PHRED_SAMPLE_SIZE)
       .map(row => FastqRecord(row(0), row(1), row(3)))
     val phredOffset = argsMap.getOrElse("phredOffset", PhredDetector(sample))
       .asInstanceOf[Int]
 
-    val trimmed = input
+    val trimmed = lines
       .map { row =>
         val rec1 = FastqRecord(row(0), row(1), row(3), phredOffset)
         val rec2 = FastqRecord(row(4), row(5), row(7), phredOffset)
