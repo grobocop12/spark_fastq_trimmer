@@ -5,11 +5,12 @@ object UsagePrinter {
     val usage =
       """
         |Usage:
-        | main [ARGS]... [TRIMMERS]...
+        | java -jar spark-fastq-trimmer.jar [ARGS]... [TRIMMERS]...
         |
         |Examples:
-        | main -m SE -i path/to/source -o path/to/output LEADING:30
-        | main -m PE -i1 path/to/source1 -i2 path/to/source2 -o path/to/output LEADING:30
+        | java -jar spark-fastq-trimmer.jar -m SE -i path/to/source -o path/to/output LEADING:30
+        | java -jar spark-fastq-trimmer.jar -m PERO -i path/to/source -o path/to/output LEADING:30
+        | java -jar spark-fastq-trimmer.jar -m PE -i1 path/to/source1 -i2 path/to/source2 -o path/to/output LEADING:30
         |
         |ARGS:
         | -h,--help
@@ -19,9 +20,9 @@ object UsagePrinter {
         | -phred64
         |   sets phred offset to 64
         | -m,--mode
-        |   selects mode: SE or PE
+        |   selects mode: SE, PE or PERO
         | -i,--in
-        |   path to source in SE mode
+        |   path to source in SE or PERO mode
         | -i1,--in1
         |   path to first source in PE mode
         | -i2,--in2
