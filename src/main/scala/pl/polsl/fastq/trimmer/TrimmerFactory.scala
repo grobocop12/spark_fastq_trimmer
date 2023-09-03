@@ -28,6 +28,7 @@ object TrimmerFactory {
         val minSequenceLikelihood: Int = otherArgs(2).toInt
         val minPrefix: Int = if (otherArgs.length > 3) otherArgs(3).toInt else 1
         val palindromeKeepBoth: Boolean = if (otherArgs.length > 4) otherArgs(4).toLowerCase.toBoolean else false
+        println("Loading adapters from: " + source)
         val lines = sc.textFile(source).collect()
         IlluminaClippingTrimmer(lines, seedMaxMiss, minPalindromeLikelihood, minSequenceLikelihood, minPrefix, palindromeKeepBoth)
       case "LEADING" => new LeadingTrimmer(args.toInt)

@@ -1,14 +1,10 @@
 package pl.polsl.fastq.mode
 
 import org.apache.spark.mllib.rdd.RDDFunctions.fromRDD
-import org.apache.spark.rdd.RDD
 import org.apache.spark.{SparkConf, SparkContext}
 import pl.polsl.fastq.data.FastqRecord
-import pl.polsl.fastq.trimmer.Trimmer
 import pl.polsl.fastq.trimmer.TrimmerFactory.createTrimmers
 import pl.polsl.fastq.utils.PhredDetector
-
-import scala.annotation.tailrec
 
 class SingleEndMode extends Mode {
   private val PHRED_SAMPLE_SIZE = 100
@@ -16,6 +12,7 @@ class SingleEndMode extends Mode {
   override def run(argsMap: Map[String, Any]): Unit = {
     val input = argsMap("input").asInstanceOf[String]
     val output = argsMap("output").asInstanceOf[String]
+    val partitions = argsMap.getOrElse("partitions", 2).asInstanceOf[Int]
     val conf = new SparkConf()
     conf.setAppName("FastqTrimmerSE")
     if (argsMap.contains("master")) {
@@ -27,7 +24,7 @@ class SingleEndMode extends Mode {
 
     val trimmers = createTrimmers(sc, argsMap("trimmers").asInstanceOf[List[String]])
 
-    val fastqLines = sc.textFile(input)
+    val fastqLines = sc.textFile(input, partitions)
       .sliding(4, 4)
 
     val sample = fastqLines
@@ -48,16 +45,5 @@ class SingleEndMode extends Mode {
       })
       .filter(_ != null)
       .saveAsTextFile(output)
-  }
-
-  @tailrec
-  private def applyTrimmer(records: RDD[FastqRecord], trimmers: List[Trimmer]): RDD[FastqRecord] = {
-    if (trimmers.isEmpty)
-      records
-    else {
-      applyTrimmer(records.map(trimmers.head.processSingle(_))
-        .filter(_ != null),
-        trimmers.tail)
-    }
   }
 }

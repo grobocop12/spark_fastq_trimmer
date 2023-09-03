@@ -7,7 +7,10 @@ packageBin / mainClass := Some("pl.polsl.fastq.Main")
 lazy val root = (project in file("."))
   .settings(
     name := "spark-fastq-trimmer",
-    libraryDependencies += "org.apache.spark" %% "spark-core" % "3.3.2",
-    libraryDependencies += "org.apache.spark" %% "spark-mllib" % "3.3.2",
-    libraryDependencies += "org.scalatest" %% "scalatest" % "3.2.15" % "test"
+    libraryDependencies += "org.scalatest" %% "scalatest" % "3.2.15" % "test",
+    libraryDependencies += "org.apache.spark" % "spark-core_2.12" % "3.0.1",
+    libraryDependencies += "org.apache.spark" % "spark-sql_2.12" % "3.0.1",
+    libraryDependencies += "org.apache.spark" % "spark-streaming_2.12" % "3.0.1",
+    libraryDependencies += "org.apache.spark" % "spark-mllib_2.12" % "3.0.1",
+    libraryDependencies += "org.jmockit" % "jmockit" % "1.34" % "test"
   )

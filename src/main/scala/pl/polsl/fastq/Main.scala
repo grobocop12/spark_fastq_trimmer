@@ -16,6 +16,8 @@ object Main extends App {
       case "help" => new HelpMode()
       case _ => throw new RuntimeException("Unknown mode.")
     }
+    println("Starting application with arguments:")
+    argsMap.foreach(println)
     mode.run(argsMap)
     println("Seconds passed: " + ((new Date().getTime - time) / 1000L))
   }

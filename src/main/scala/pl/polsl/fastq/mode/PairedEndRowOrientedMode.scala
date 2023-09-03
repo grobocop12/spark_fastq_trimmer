@@ -12,8 +12,9 @@ class PairedEndRowOrientedMode extends Mode {
   override def run(argsMap: Map[String, Any]): Unit = {
     val input = argsMap("input").asInstanceOf[String]
     val outputs = createOutputFileNames(argsMap("output").asInstanceOf[String])
+    val partitions = argsMap.getOrElse("partitions", 2).asInstanceOf[Int]
     val conf = new SparkConf()
-    conf.setAppName("FastqTrimmerPERO")
+    conf.setAppName("PERO BIG 9")
     if (argsMap.contains("master")) {
       conf.setMaster(argsMap("master").asInstanceOf[String])
     }
@@ -24,7 +25,7 @@ class PairedEndRowOrientedMode extends Mode {
     val validatedPairs = argsMap.getOrElse("validate_pairs", false)
       .asInstanceOf[Boolean]
 
-    val lines = sc.textFile(input)
+    val lines = sc.textFile(input, partitions)
       .map(_.split("\\|"))
 
     val sample = lines

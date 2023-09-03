@@ -21,6 +21,9 @@ object ArgsParser {
       case "-m" | "--mode" =>
         builder += ("mode" -> args.head)
         parseOne(args.tail.head, args.tail.tail, builder)
+      case "-partitions" =>
+        builder += ("partitions" -> args.head)
+        parseOne(args.tail.head, args.tail.tail, builder)
       case "-phred33" =>
         builder += ("phredOffset" -> 33)
         parseOne(args.head, args.tail, builder)

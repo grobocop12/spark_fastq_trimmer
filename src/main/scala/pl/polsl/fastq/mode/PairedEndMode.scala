@@ -14,6 +14,8 @@ class PairedEndMode extends Mode {
     val input1 = argsMap("input_1").asInstanceOf[String]
     val input2 = argsMap("input_2").asInstanceOf[String]
     val outputs = createOutputFileNames(argsMap("output").asInstanceOf[String])
+    val partitions = argsMap.getOrElse("partitions", 2).asInstanceOf[Int]
+
     val conf = new SparkConf()
     conf.setAppName("FastqTrimmerPE")
     if (argsMap.contains("master")) {
@@ -26,10 +28,10 @@ class PairedEndMode extends Mode {
     val validatedPairs = argsMap.getOrElse("validate_pairs", false)
       .asInstanceOf[Boolean]
 
-    val lines1 = sc.textFile(input1)
+    val lines1 = sc.textFile(input1, partitions)
       .sliding(4, 4)
       .zipWithIndex()
-    val lines2 = sc.textFile(input2)
+    val lines2 = sc.textFile(input2, partitions)
       .sliding(4, 4)
       .zipWithIndex()
 
