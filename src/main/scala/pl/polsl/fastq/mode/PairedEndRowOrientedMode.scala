@@ -26,20 +26,23 @@ class PairedEndRowOrientedMode extends Mode {
       .asInstanceOf[Boolean]
 
     val lines = sc.textFile(input, partitions)
-      .map(_.split("\\|"))
 
     val sample = lines
+      .map(_.split("\\|"))
       .take(PHRED_SAMPLE_SIZE)
       .map(row => FastqRecord(row(0), row(1), row(3)))
     val phredOffset = argsMap.getOrElse("phredOffset", PhredDetector(sample))
       .asInstanceOf[Int]
 
-    val trimmed = lines
+    val records = lines
+      .map(_.split("\\|"))
       .map { row =>
         val rec1 = FastqRecord(row(0), row(1), row(3), phredOffset)
         val rec2 = FastqRecord(row(4), row(5), row(7), phredOffset)
         (rec1, rec2)
       }
+
+    val trimmed = records
       .map(t => {
         var recs = t
         if (validatedPairs) PairValidator.validatePair(recs._1.name, recs._2.name)

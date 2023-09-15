@@ -34,8 +34,9 @@ class SingleEndMode extends Mode {
     val phredOffset: Int = argsMap.getOrElse("phredOffset", PhredDetector(sample))
       .asInstanceOf[Int]
 
-    fastqLines
-      .map(x => FastqRecord(x(0), x(1), x(3), phredOffset))
+    val records = fastqLines.map(x => FastqRecord(x(0), x(1), x(3), phredOffset))
+
+    records
       .map(r => {
         var rec = r
         for (trimmer <- trimmers) {
