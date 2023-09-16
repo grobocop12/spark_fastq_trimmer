@@ -14,7 +14,7 @@ class PairedEndRowOrientedMode extends Mode {
     val outputs = createOutputFileNames(argsMap("output").asInstanceOf[String])
     val partitions = argsMap.getOrElse("partitions", 2).asInstanceOf[Int]
     val conf = new SparkConf()
-    conf.setAppName("PERO BIG 9")
+    conf.setAppName("FastqTrimmerPEROM")
     if (argsMap.contains("master")) {
       conf.setMaster(argsMap("master").asInstanceOf[String])
     }
