@@ -14,7 +14,8 @@ class PairedEndMode extends Mode {
     val input1 = argsMap("input_1").asInstanceOf[String]
     val input2 = argsMap("input_2").asInstanceOf[String]
     val outputs = createOutputFileNames(argsMap("output").asInstanceOf[String])
-    val partitions = argsMap.getOrElse("partitions", 2).asInstanceOf[Int]
+    val partitions = argsMap.getOrElse("partitions", "2").asInstanceOf[String]
+      .toInt
 
     val conf = new SparkConf()
     conf.setAppName("FastqTrimmerPE")

@@ -12,7 +12,8 @@ class PairedEndRowOrientedMode extends Mode {
   override def run(argsMap: Map[String, Any]): Unit = {
     val input = argsMap("input").asInstanceOf[String]
     val outputs = createOutputFileNames(argsMap("output").asInstanceOf[String])
-    val partitions = argsMap.getOrElse("partitions", 2).asInstanceOf[Int]
+    val partitions = argsMap.getOrElse("partitions", "2").asInstanceOf[String]
+      .toInt
     val conf = new SparkConf()
     conf.setAppName("FastqTrimmerPEROM")
     if (argsMap.contains("master")) {
